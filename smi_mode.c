@@ -124,10 +124,15 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 	struct smi_device *sdev = crtc->dev->dev_private;
 	logicalMode_t logicalMode;
 	unsigned long refresh_rate;
-	logicalMode.valid_edid = false;
-	int need_to_scale = 0;
+	unsigned int need_to_scale = 0;
+	YUV_BUF_ADDR SrcAddr;
+	BLIT_BLK src;
+	BLIT_BLK dest;
 
 	ENTER();
+	
+	logicalMode.valid_edid = false;
+
 	if (WARN_ON(!crtc->state))
 		LEAVE();
 
@@ -258,9 +263,6 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 				srcFormat = FFT_RGB565;
 			if(logicalMode.bpp==32)
 				srcFormat = FFT_RGBx888;
-			YUV_BUF_ADDR SrcAddr;
-			BLIT_BLK src;
-			BLIT_BLK dest;
 		
 			src.Width = mode->hdisplay;
 			src.Height = mode->vdisplay;
