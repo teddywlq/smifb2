@@ -1,0 +1,37 @@
+1. introduction
+SiliconMotion SM750/SM768 Graphics PCI-E DRM Driver
+
+2. Usage
+This driver is use the kernel 4.8 or kernel 4.10. 
+1)  Please make sure that you are in console and run as root user.
+2)  Open this driver directory, and use the "make" command, it will to generate the "smifb.ko".
+3)	Install the module.
+	make install
+4)  use "depmod -a" to handle dependency descriptions for loadable kernel modules.
+5)	Reboot and restart graphic interface, 
+
+3. Some notes and driver parameters:
+
+	Module loading paremeter:
+
+	1)."bpp"
+	If you use SM768 as primary card, you can directly use it. The driver will set color depth to 16bpp by default. 
+	If you want to change it,please directly add module paremeter, "insmod ./smifb.ko bpp=32"
+	
+	2). "nopnp" 
+	All outputs (DVI+VGA)have been recognized as connected. If edid cannot be read, the resolution will be ¡°1024x768¡± by default.
+	For SM768: HDMI will be a clone one of DVI output.
+	Use ¡°insmod ./smifb.ko nopnp=1¡±
+
+		Notes:If you build the driver with built-in method, the paramter
+		you edited in the grub config file will be also the
+		same format as above modular method,but additionaly add
+		"video=smifb bpp=32" or "video=smifb nopnp=1"
+		
+	Build paremeter:
+
+	1). If you use SM768 as secondary  card and let it work with onboard graphic driver to do extend display. Please compile the driver with "make prime=1". 
+	In this situation, color depth will be set to 32bpp.
+	2). If you want to use analog/HDMI audio on SM768, please compile the driver with "make audio=1"
+
+
