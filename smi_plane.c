@@ -116,14 +116,23 @@ static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_s
 			LEAVE();
 		}
 		if (g_specId == SPC_SM750) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+			plane_addr = drm_gem_vram_vmap(gbo);
+#else
 			plane_addr = drm_gem_vram_kmap(gbo, true, NULL);
+#endif
 			if (IS_ERR(plane_addr)) {
-				dbg_msg("failed to kmap fbcon\n");
+				dbg_msg("failed to map fbcon\n");
 			} else {
 				ddk750_initCursor(disp_ctrl, (u32)cursor_offset, BPP16_BLACK,
 						  BPP16_WHITE, BPP16_BLUE);
 				colorcur2monocur(plane_addr);
+				
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+				drm_gem_vram_vunmap(gbo, plane_addr);	
+#else
 				drm_gem_vram_kunmap(gbo);
+#endif
 				ddk750_enableCursor(disp_ctrl, 1);
 			}
 		} else {
