@@ -10,6 +10,13 @@ This driver can be compiled under the kernel 5.x.
 4)  use "depmod -a" to handle dependency descriptions for loadable kernel modules.
 5)	Reboot and restart graphic interface, 
 
+Build essential package:
+If there is build-mistake such as "/lib/modules/.../build: No such file or directory"
+(Ubuntu version)
+apt-get install linux-headers-$(uname -r) build-essential
+(Fedora version)
+yum install kernel-devel-$(uname -r) kernel-headers-$(uname -r)
+
 3. Some notes and driver parameters:
 
 	Module loading paremeter:

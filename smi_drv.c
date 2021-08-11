@@ -59,7 +59,7 @@ module_param(smi_pat, int, S_IWUSR | S_IRUSR);
 
 MODULE_PARM_DESC(modeset, "Disable/Enable modesetting");
 module_param_named(modeset, smi_modeset, int, 0400);
-MODULE_PARM_DESC(bpp, "Max bits-per-pixel (default:16)");
+MODULE_PARM_DESC(bpp, "Max bits-per-pixel (default:32)");
 module_param_named(bpp, smi_bpp, int, 0400);
 MODULE_PARM_DESC(nopnp, "Force conncet to the monitor without monitor EDID (default:0) bit0:DVI,bit1:VGA,bit2:HDMI ");
 module_param_named(nopnp, force_connect, int, 0400);
