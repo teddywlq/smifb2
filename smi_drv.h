@@ -94,6 +94,9 @@ extern int pwm_ctrl;
 struct smi_750_register;
 struct smi_768_register;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+#define DRM_FILE_PAGE_OFFSET (0x100000000ULL >> PAGE_SHIFT)
+#endif
 
 
 struct smi_device {
