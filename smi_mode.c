@@ -391,7 +391,7 @@ static struct smi_crtc *smi_crtc_init(struct drm_device *dev, int crtc_id)
 
 	if (IS_ERR(primary)) {
 		r = -ENOMEM;
-		goto free_mem;
+		goto clean_primary;
 	}
 
 	if(swcur_en)
@@ -400,7 +400,7 @@ static struct smi_crtc *smi_crtc_init(struct drm_device *dev, int crtc_id)
 		cursor = smi_plane_init(cdev, 1 << crtc_id, DRM_PLANE_TYPE_CURSOR);
 		if (IS_ERR(cursor)) {
 			r = -ENOMEM;
-			goto clean_primary;
+			goto clean_cursor;
 		}
 	}
 	smi_crtc->CursorOffset = 0;
@@ -774,9 +774,10 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 {
 	u32 vrefresh = drm_mode_vrefresh(mode);	
 	
-	if ((vrefresh < 29) || (vrefresh > 61) || (vrefresh > 31 && vrefresh < 59))  //We only support and use 30Hz or 60Hz mode currently.
-		return MODE_NOCLOCK;
-
+	if ((vrefresh < 29) || (vrefresh > 61) || (vrefresh > 31 && vrefresh < 59)){  
+		if(!edid_mode)
+			return MODE_NOCLOCK;
+	}
 
 	if ((mode->hdisplay > 3840) || (mode->vdisplay > 2160) || (mode->clock > 297000))
 		 return MODE_NOMODE;
