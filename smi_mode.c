@@ -391,7 +391,7 @@ static struct smi_crtc *smi_crtc_init(struct drm_device *dev, int crtc_id)
 
 	if (IS_ERR(primary)) {
 		r = -ENOMEM;
-		goto clean_primary;
+		goto free_mem;
 	}
 
 	if(swcur_en)
@@ -400,7 +400,7 @@ static struct smi_crtc *smi_crtc_init(struct drm_device *dev, int crtc_id)
 		cursor = smi_plane_init(cdev, 1 << crtc_id, DRM_PLANE_TYPE_CURSOR);
 		if (IS_ERR(cursor)) {
 			r = -ENOMEM;
-			goto clean_cursor;
+			goto clean_primary;
 		}
 	}
 	smi_crtc->CursorOffset = 0;
