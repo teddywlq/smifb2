@@ -145,7 +145,12 @@ void hw750_resume(struct smi_750_register * pSave);
 int hw750_check_vsync_interrupt(int path);
 void hw750_clear_vsync_interrupt(int path);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw750_en_dis_interrupt(int status, int pipe);
+#else
+int hw750_en_dis_interrupt(int status);
+#endif
+
 
 void ddk750_disable_IntMask(void);
 

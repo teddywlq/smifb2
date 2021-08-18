@@ -19,6 +19,7 @@
 #include "ddk768/ddk768_video.h"
 #include "ddk768/ddk768_hdmi.h"
 #include "ddk768/ddk768_pwm.h"
+#include <linux/version.h>
 
 
 extern int lcd_scale;
@@ -225,6 +226,7 @@ int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mod
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe)
 {
 	if(status == 0)
@@ -241,6 +243,24 @@ int hw768_en_dis_interrupt(int status, int pipe)
 	}
 	return 0;
 }
+#else
+int hw768_en_dis_interrupt(int status)
+	{
+		if(status == 0)
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, DISABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, DISABLE)); 
+		}
+		else
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, ENABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, ENABLE));  
+		}
+		return 0;
+	}
+
+#endif
+
 void hw768_HDMI_Enable_Output(void)
 {
 	HDMI_Enable_Output();

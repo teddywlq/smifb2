@@ -152,7 +152,11 @@ void hw768_clear_vsync_interrupt(int path);
 long hw768_setMode(logicalMode_t *pLogicalMode, struct drm_display_mode mode);
 
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe);
+#else
+int hw768_en_dis_interrupt(int status);
+#endif
 
 int hdmi_detect(void);
 

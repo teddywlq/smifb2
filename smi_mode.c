@@ -331,8 +331,14 @@ static void smi_crtc_destroy(struct drm_crtc *crtc)
 }
 
 
-static void smi_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_crtc_state *old_state)
+static void smi_crtc_atomic_flush(struct drm_crtc *crtc, 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	struct drm_atomic_state *state)
+#else
+	struct drm_crtc_state *old_state)
+#endif
 {
+	
 	unsigned long flags;
 	ENTER();
 	spin_lock_irqsave(&crtc->dev->event_lock, flags);
@@ -343,17 +349,50 @@ static void smi_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_crtc_state *
 	LEAVE();
 }
 
-static void smi_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_crtc_state *old_state)
+static void smi_crtc_atomic_enable(struct drm_crtc *crtc, 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+		struct drm_atomic_state *state)
+#else
+		struct drm_crtc_state *old_state)
+#endif
 {
 	ENTER();
 	LEAVE();
 }
 
-static void smi_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_crtc_state *old_state)
+static void smi_crtc_atomic_disable(struct drm_crtc *crtc, 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+		struct drm_atomic_state *state)
+#else
+		struct drm_crtc_state *old_state)
+#endif
 {
 	ENTER();
 	LEAVE();
 }
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+static int smi_enable_vblank(struct drm_crtc *crtc)
+{
+	if (g_specId == SPC_SM750) {
+		hw750_en_dis_interrupt(1);
+	} else if (g_specId == SPC_SM768) {
+		hw768_en_dis_interrupt(1);
+	}
+	return 0;
+}
+
+static void smi_disable_vblank(struct drm_crtc *crtc)
+{
+	if (g_specId == SPC_SM750) {
+		hw750_en_dis_interrupt(0);
+	} else if (g_specId == SPC_SM768) {
+		hw768_en_dis_interrupt(0);
+	}
+}
+#endif
+
+
 
 
 /* These provide the minimum set of functions required to handle a CRTC */
@@ -365,6 +404,10 @@ static const struct drm_crtc_funcs smi_crtc_funcs = {
 	.set_config = drm_atomic_helper_set_config,
 	.destroy = smi_crtc_destroy,
 	.gamma_set = smi_crtc_gamma_set,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+	.enable_vblank = smi_enable_vblank,
+	.disable_vblank = smi_disable_vblank,
+#endif
 };
 
 static const struct drm_crtc_helper_funcs smi_crtc_helper_funcs = {

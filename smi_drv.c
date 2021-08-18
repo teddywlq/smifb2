@@ -309,6 +309,7 @@ static int smi_pm_poweroff(struct device *dev)
 	return smi_drm_freeze(ddev);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 static int smi_enable_vblank(struct drm_device *dev, unsigned int pipe)
 {
 	if (g_specId == SPC_SM750) {
@@ -327,7 +328,7 @@ static void smi_disable_vblank(struct drm_device *dev, unsigned int pipe)
 		hw768_en_dis_interrupt(0, pipe);
 	}
 }
-
+#endif
 static void smi_irq_preinstall(struct drm_device *dev)
 {
 	// To Do....
@@ -458,8 +459,10 @@ static struct drm_driver driver = {
 	.dumb_map_offset = smi_dumb_mmap_offset,
 	.dumb_destroy = drm_gem_dumb_destroy,
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 	.enable_vblank = smi_enable_vblank,
 	.disable_vblank = smi_disable_vblank,
+#endif
 	.irq_preinstall = smi_irq_preinstall,
 	.irq_postinstall = smi_irq_postinstall,
 	.irq_uninstall = smi_irq_uninstall,

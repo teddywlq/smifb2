@@ -18,6 +18,11 @@
 #include <drm/drm_gem_framebuffer_helper.h>
 #include <drm/drm_plane_helper.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#include <linux/dma-buf-map.h>
+#endif
+
+
 #include "smi_dbg.h"
 
 #include "hw750.h"
@@ -71,6 +76,11 @@ static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_s
 #else
 	struct smi_bo *bo;
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	struct dma_buf_map map;
+	int ret;
+#endif
+
 	int x, y;
 	disp_control_t disp_ctrl;
 	int i, ctrl_index = 0, max_enc = 0;	
@@ -116,19 +126,32 @@ static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_s
 			LEAVE();
 		}
 		if (g_specId == SPC_SM750) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+			ret = drm_gem_vram_vmap(gbo, &map);
+			
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 			plane_addr = drm_gem_vram_vmap(gbo);
 #else
 			plane_addr = drm_gem_vram_kmap(gbo, true, NULL);
 #endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+			if (ret) {				
+#else
 			if (IS_ERR(plane_addr)) {
+#endif
 				dbg_msg("failed to map fbcon\n");
 			} else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)			
+				plane_addr = map.vaddr;		
+#endif
 				ddk750_initCursor(disp_ctrl, (u32)cursor_offset, BPP16_BLACK,
 						  BPP16_WHITE, BPP16_BLUE);
 				colorcur2monocur(plane_addr);
 				
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+				drm_gem_vram_vunmap(gbo, &map);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 				drm_gem_vram_vunmap(gbo, plane_addr);	
 #else
 				drm_gem_vram_kunmap(gbo);

@@ -22,6 +22,7 @@
 #ifdef USE_HDMICHIP
 #include "ddk750/ddk750_sii9022.h"
 #endif
+#include <linux/version.h>
 
 
 struct smi_750_register{
@@ -218,6 +219,9 @@ void hw750_set_dpms(int display,int state)
 		setPath(CRT_PATH, SECONDARY_CTRL, state);
 	}
 }
+
+ 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw750_en_dis_interrupt(int status, int pipe)
 {
 	if(status == 0)
@@ -233,8 +237,25 @@ int hw750_en_dis_interrupt(int status, int pipe)
 		FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, ENABLE));
 	}
 	return 0;
-}
 
+}
+#else
+int hw750_en_dis_interrupt(int status)
+	{
+		if(status == 0)
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, SECONDARY_VSYNC, DISABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, DISABLE)); 
+		}
+		else
+		{
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, SECONDARY_VSYNC, ENABLE));
+			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, PRIMARY_VSYNC, ENABLE));  
+		}
+		return 0;
+	}
+
+#endif
 
 
 int hw750_check_vsync_interrupt(int path)
