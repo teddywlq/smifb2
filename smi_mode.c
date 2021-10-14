@@ -827,7 +827,7 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 	
 	
 	if(mode->hdisplay > 1920) {
-		if ((g_m_connector == USE_DVI_HDMI) || (g_m_connector == USE_VGA_HDMI))
+		if ((g_m_connector == USE_DVI_HDMI) || (g_m_connector == USE_VGA_HDMI)||(g_specId == SPC_SM750))
 			return MODE_NOMODE;
 	}
 
@@ -1140,6 +1140,9 @@ int smi_modeset_init(struct smi_device *cdev)
 
 	if(smi_bpp >= 24)
 		smi_bpp = 32;
+
+	if(g_specId == SPC_SM750)
+		smi_bpp = 16;
 
 	//in multi-card with Intel, we can only use 32bpp
 #ifdef PRIME
