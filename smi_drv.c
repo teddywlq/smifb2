@@ -200,13 +200,10 @@ static void smi_pci_remove(struct pci_dev *pdev)
 
 static int smi_drm_freeze(struct drm_device *dev)
 {
+	int ret;
 	struct smi_device *sdev = dev->dev_private;
 	ENTER();
-
 	
-    pci_save_state(dev->pdev);
-	drm_fb_helper_set_suspend_unlocked(dev->fb_helper, 1);
-
 	if (g_specId == SPC_SM750)
 		hw750_suspend(sdev->regsave);
     else if(g_specId == SPC_SM768){
@@ -215,6 +212,11 @@ static int smi_drm_freeze(struct drm_device *dev)
 		hw768_suspend(sdev->regsave_768);
 
     }
+	ret = drm_mode_config_helper_suspend(dev);
+	if (ret)
+		return ret;
+	
+    pci_save_state(dev->pdev);
 
 	LEAVE(0);
 }
@@ -225,9 +227,6 @@ static int smi_drm_thaw(struct drm_device *dev)
 
 	ENTER();
 	
-	drm_mode_config_reset(dev);
-	
-	drm_fb_helper_set_suspend_unlocked(dev->fb_helper, 0);
 	
 	if(g_specId == SPC_SM750)
 			hw750_resume(sdev->regsave);
@@ -279,7 +278,7 @@ static int smi_pm_suspend(struct device *dev)
 	pci_disable_device(pdev);
 	pci_set_power_state(pdev, PCI_D3hot);
 	
-	return drm_mode_config_helper_suspend(ddev);
+	return 0;
 }
 
 static int smi_pm_resume(struct device *dev)
