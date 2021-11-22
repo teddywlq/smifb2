@@ -332,7 +332,7 @@ static void smi_crtc_destroy(struct drm_crtc *crtc)
 
 
 static void smi_crtc_atomic_flush(struct drm_crtc *crtc, 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	struct drm_atomic_state *state)
 #else
 	struct drm_crtc_state *old_state)
@@ -350,7 +350,7 @@ static void smi_crtc_atomic_flush(struct drm_crtc *crtc,
 }
 
 static void smi_crtc_atomic_enable(struct drm_crtc *crtc, 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 		struct drm_atomic_state *state)
 #else
 		struct drm_crtc_state *old_state)
@@ -361,7 +361,7 @@ static void smi_crtc_atomic_enable(struct drm_crtc *crtc,
 }
 
 static void smi_crtc_atomic_disable(struct drm_crtc *crtc, 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 		struct drm_atomic_state *state)
 #else
 		struct drm_crtc_state *old_state)
