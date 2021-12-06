@@ -40,14 +40,23 @@ static const uint32_t smi_cursor_plane_formats[] = { DRM_FORMAT_RGB565, DRM_FORM
 						     DRM_FORMAT_ARGB8888 };
 
 static const uint32_t smi_formats[] = { DRM_FORMAT_RGB565,   DRM_FORMAT_BGR565,
-					DRM_FORMAT_RGB888,   DRM_FORMAT_BGR888,
-					DRM_FORMAT_XRGB8888, DRM_FORMAT_XBGR8888,
-					DRM_FORMAT_RGBA8888, DRM_FORMAT_BGRA8888,
-					DRM_FORMAT_ARGB8888, DRM_FORMAT_ABGR8888 };
+					DRM_FORMAT_RGB888,
+					DRM_FORMAT_XRGB8888,
+					DRM_FORMAT_RGBA8888,
+					DRM_FORMAT_ARGB8888};
 
 
-int smi_cursor_atomic_check(struct drm_plane *plane, struct drm_plane_state *state)
+int smi_cursor_atomic_check(struct drm_plane *plane, 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)  
+				struct drm_plane_state *state
+#else
+				struct drm_atomic_state *atom_state
+#endif
+)
 {
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	struct drm_plane_state *state = drm_atomic_get_new_plane_state(atom_state, plane);
+#endif
 	struct drm_crtc *crtc = state->crtc;
 	int src_w, src_h;
 
@@ -65,10 +74,23 @@ int smi_cursor_atomic_check(struct drm_plane *plane, struct drm_plane_state *sta
 	return 0;
 }
 
-static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_state *old_state)
+static void smi_cursor_atomic_update(struct drm_plane *plane, 
+#if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
+				 struct drm_plane_state *old_state
+#else
+				struct drm_atomic_state *atom_state
+#endif
+)
 {
-	struct drm_crtc *crtc = plane->state->crtc;
-	struct drm_framebuffer *fb = plane->state->fb;
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+	struct drm_plane_state *new_state = drm_atomic_get_new_plane_state(atom_state, plane);
+#else
+	struct drm_plane_state *new_state = plane->state;
+#endif
+	
+	struct drm_crtc *crtc = new_state->crtc;
+	struct drm_framebuffer *fb = new_state->fb;
 	void *plane_addr;
 	u64 cursor_offset;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
@@ -190,8 +212,8 @@ static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_s
 #endif
 	}
 
-	x = plane->state->crtc_x;
-	y = plane->state->crtc_y;
+	x = new_state->crtc_x;
+	y = new_state->crtc_y;
 
 	if (g_specId == SPC_SM750) {
 		ddk750_setCursorPosition(disp_ctrl, x < 0 ? -x : x, y < 0 ? -y : y, y < 0 ? 1 : 0,
@@ -202,8 +224,17 @@ static void smi_cursor_atomic_update(struct drm_plane *plane, struct drm_plane_s
 	}
 }
 
-void smi_cursor_atomic_disable(struct drm_plane *plane, struct drm_plane_state *old_state)
+void smi_cursor_atomic_disable(struct drm_plane *plane, 
+#if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
+				struct drm_plane_state *old_state
+#else
+				struct drm_atomic_state *atom_state
+#endif
+)
 {
+#if KERNEL_VERSION(5, 13, 0) <= LINUX_VERSION_CODE
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#endif
 	disp_control_t disp_ctrl;
 	int i, ctrl_index = 0, max_enc = 0;	
 	
@@ -243,17 +274,19 @@ void smi_cursor_atomic_disable(struct drm_plane *plane, struct drm_plane_state *
 
 
 static const struct drm_plane_helper_funcs smi_cursor_helper_funcs = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+	.prepare_fb = drm_gem_vram_plane_helper_prepare_fb,
+	.cleanup_fb = drm_gem_vram_plane_helper_cleanup_fb,
+#endif
 	.atomic_check = smi_cursor_atomic_check,
 	.atomic_update = smi_cursor_atomic_update,
 	.atomic_disable = smi_cursor_atomic_disable,
 };
 
 
-static int smi_primary_plane_prepare_fb(struct drm_plane *plane, struct drm_plane_state *new_state)
+__attribute__((unused)) static int smi_primary_plane_prepare_fb(struct drm_plane *plane, struct drm_plane_state *new_state)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-	return drm_gem_vram_plane_helper_prepare_fb(plane, new_state);
-#else
+
 	size_t i;
 	int ret;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
@@ -301,14 +334,11 @@ err_smi_bo_unpin:
 	}
 #endif
 	LEAVE(ret);
-#endif
+
 }
 
-static void smi_primary_plane_cleanup_fb(struct drm_plane *plane, struct drm_plane_state *old_state)
+__attribute__((unused)) static void smi_primary_plane_cleanup_fb(struct drm_plane *plane, struct drm_plane_state *old_state)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-	drm_gem_vram_plane_helper_cleanup_fb(plane, old_state);
-#else
 	size_t i;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	struct drm_gem_vram_object *gbo;
@@ -332,14 +362,24 @@ static void smi_primary_plane_cleanup_fb(struct drm_plane *plane, struct drm_pla
 #endif
 	}
 	LEAVE();
-#endif
 }
 
 static void smi_primary_plane_atomic_update(struct drm_plane *plane,
-					    struct drm_plane_state *old_state)
+#if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
+				 struct drm_plane_state *old_state
+#else
+				struct drm_atomic_state *atom_state
+#endif
+)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *state = drm_atomic_get_new_plane_state(atom_state,
+									   plane);
+#else
+	struct drm_plane_state *state = plane->state;
+#endif
 	disp_control_t disp_ctrl;
-	struct drm_framebuffer *fb = plane->state->fb;
+	struct drm_framebuffer *fb = state->fb;
 	u64 plane_addr;
 	uint32_t w, h, x, y;
 	uint32_t dst_x, dst_y;
@@ -352,16 +392,16 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	int i, ctrl_index = 0, max_enc = 0;	
 
 	ENTER();
-	if (!plane->state->crtc || !plane->state->fb)
+	if (!state->crtc || !state->fb)
 		LEAVE();
 
-	dbg_msg("source: (%u, %u) - (%u, %u)\n", (plane->state->src_x >> 16),
-		(plane->state->src_y >> 16), (plane->state->src_w >> 16),
-		(plane->state->src_h >> 16));
-	dbg_msg("dest: (%d, %d) - (%d, %d)\n", plane->state->crtc_x, plane->state->crtc_y,
-		plane->state->crtc_w, plane->state->crtc_h);
+	dbg_msg("source: (%u, %u) - (%u, %u)\n", (state->src_x >> 16),
+		(state->src_y >> 16), (state->src_w >> 16),
+		(state->src_h >> 16));
+	dbg_msg("dest: (%d, %d) - (%d, %d)\n", state->crtc_x, state->crtc_y,
+		state->crtc_w, state->crtc_h);
 
-	if (!plane->state->visible)
+	if (!state->visible)
 		LEAVE();
 
 	
@@ -373,7 +413,7 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 
 	for(i = 0;i < max_enc; i++)
 	{
-		if(plane->state->crtc == smi_enc_tab[i]->crtc)
+		if(state->crtc == smi_enc_tab[i]->crtc)
 		{
 			ctrl_index = i;
 			break;
@@ -387,12 +427,12 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	}
 
 
-	x = (plane->state->src_x >> 16);
-	y = (plane->state->src_y >> 16);
-	w = (plane->state->src_w >> 16);
-	h = (plane->state->src_h >> 16);
-	dst_x = (plane->state->crtc_x >> 16);
-	dst_y = (plane->state->crtc_y >> 16);
+	x = (state->src_x >> 16);
+	y = (state->src_y >> 16);
+	w = (state->src_w >> 16);
+	h = (state->src_h >> 16);
+	dst_x = (state->crtc_x >> 16);
+	dst_y = (state->crtc_y >> 16);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	gbo = drm_gem_vram_of_gem(fb->obj[0]);
@@ -413,14 +453,30 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	LEAVE();
 }
 
-static int smi_primary_plane_atomic_check(struct drm_plane *plane, struct drm_plane_state *state)
+static int smi_primary_plane_atomic_check(struct drm_plane *plane, 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *state
+#else
+	struct drm_atomic_state *atom_state
+#endif
+)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *state = drm_atomic_get_new_plane_state(atom_state, plane);
+#endif
+	struct drm_crtc *crtc = state->crtc;
 	struct drm_crtc_state *crtc_state;
-	ENTER();
-	if (!state->crtc)
-		LEAVE(0);
 
-	crtc_state = drm_atomic_get_crtc_state(state->state, state->crtc);
+	ENTER();
+	
+	if (!crtc)
+		LEAVE(0);
+	
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
+	crtc_state = drm_atomic_get_crtc_state(state->state, crtc);
+#else
+	crtc_state = drm_atomic_get_crtc_state(atom_state, crtc);
+#endif	
 	if (IS_ERR(crtc_state))
 		LEAVE(PTR_ERR(crtc_state));
 
@@ -429,8 +485,16 @@ static int smi_primary_plane_atomic_check(struct drm_plane *plane, struct drm_pl
 }
 
 static const struct drm_plane_helper_funcs smi_primary_plane_helper_funcs = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+	.prepare_fb = drm_gem_vram_plane_helper_prepare_fb,
+#else
 	.prepare_fb = smi_primary_plane_prepare_fb,
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+	.cleanup_fb = drm_gem_vram_plane_helper_cleanup_fb,
+#else
 	.cleanup_fb = smi_primary_plane_cleanup_fb,
+#endif
 	.atomic_check = smi_primary_plane_atomic_check,
 	.atomic_update = smi_primary_plane_atomic_update,
 };
