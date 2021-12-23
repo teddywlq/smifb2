@@ -17,7 +17,6 @@
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
 
-#ifdef NEED_PRIME_EXPORT
 struct sg_table *smi_gem_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct smi_bo *bo = gem_to_smi_bo(obj);
@@ -25,7 +24,7 @@ struct sg_table *smi_gem_prime_get_sg_table(struct drm_gem_object *obj)
 
 	return drm_prime_pages_to_sg(bo->bo.ttm->pages, npages);
 }
-#endif
+
 
 void *smi_gem_prime_vmap(struct drm_gem_object *obj)
 {

@@ -29,10 +29,6 @@ smifb-y += ddk768/l3.o
 smifb-y += ddk768/wm8978.o
 
 
-ifeq ($(prime),1)
-EXTRA_CFLAGS += -DPRIME
-endif
-
 ccflags-y :=-O2 -fno-tree-scev-cprop -D_D_SMI -D_D_SMI_D -D__cdecl
 
 else

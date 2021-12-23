@@ -59,8 +59,6 @@
 #ifdef CONFIG_CPU_LOONGSON3
 #define NO_WC
 #endif
-#undef NEED_PRIME_EXPORT
-
 #ifdef UNUSED
 #elif defined(__GNUC__)
 #define UNUSED(x) UNUSED_##x __attribute__((unused))
@@ -202,10 +200,7 @@ int smi_mm_init(struct smi_device *smi);
 void smi_mm_fini(struct smi_device *smi);
 
 /* smi_prime.c */
-
-#ifdef NEED_PRIME_EXPORT
 struct sg_table *smi_gem_prime_get_sg_table(struct drm_gem_object *obj);
-#endif
 struct drm_gem_object *smi_gem_prime_import_sg_table(struct drm_device *dev,
 						     struct dma_buf_attachment *attach,
 						     struct sg_table *sg);

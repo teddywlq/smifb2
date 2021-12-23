@@ -35,11 +35,10 @@
 #define MB(x) (x << 20) /* Macro for Mega Bytes */
 
 
-#ifdef PRIME
 static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_file *file,
 				      unsigned flags, unsigned color, struct drm_clip_rect *clips,
 				      unsigned num_clips);
-#endif
+
 
 static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *dev,
 							   struct drm_file *filp,
@@ -48,9 +47,8 @@ static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *de
 static const struct drm_framebuffer_funcs smi_fb_funcs = {
 	.create_handle = drm_gem_fb_create_handle,
 	.destroy = drm_gem_fb_destroy,
-#ifdef PRIME
 	.dirty = smi_user_framebuffer_dirty,
-#endif
+
 };
 
 static const struct drm_mode_config_helper_funcs smi_mode_config_helper_funcs = {
@@ -64,7 +62,6 @@ static const struct drm_mode_config_funcs smi_mode_config_funcs = {
 	.atomic_commit = drm_atomic_helper_commit,
 };
 
-#ifdef PRIME
 static bool smi_merge_clips(struct drm_clip_rect *dst, struct drm_clip_rect *src,
 			    unsigned int num_clips, unsigned int flags, u32 max_width,
 			    u32 max_height)
@@ -274,7 +271,7 @@ unlock:
 
 	return 0;
 }
-#endif
+
 
 static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *dev,
 							   struct drm_file *filp,

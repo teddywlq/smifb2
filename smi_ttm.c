@@ -215,10 +215,6 @@ int smi_mm_init(struct smi_device *smi)
 		return ret;
 	}
 
-#ifdef PRIME
-	//if (g_specId == SPC_SM750)
-	//	vram_size = 0x4000000;
-#endif
 	ret = ttm_bo_init_mm(bdev, TTM_PL_VRAM, vram_size >> PAGE_SHIFT);
 
 	if (ret) {
@@ -228,10 +224,6 @@ int smi_mm_init(struct smi_device *smi)
 #else
 	struct drm_vram_mm *vmm;
 
-#ifdef PRIME
-	//if (g_specId == SPC_SM750)
-	//	vram_size = 0x4000000;
-#endif
 	vmm = drm_vram_helper_alloc_mm(dev, pci_resource_start(dev->pdev, 0),
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 				       vram_size);

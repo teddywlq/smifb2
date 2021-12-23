@@ -476,11 +476,7 @@ static struct drm_driver driver = {
 	.gem_prime_vunmap = smi_gem_prime_vunmap,
 	.gem_prime_pin = smi_gem_prime_pin,
 	.gem_prime_unpin = smi_gem_prime_unpin,
-#ifdef NEED_PRIME_EXPORT
-	// The function is used to export reservation object to secondary GPU.
-	// Currently in multi-GPU system, SM768/SM750 only serves as secondary GPU.
 	.gem_prime_get_sg_table = smi_gem_prime_get_sg_table,
-#endif
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
 	DRM_GEM_VRAM_DRIVER_PRIME,
 #endif

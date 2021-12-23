@@ -1144,11 +1144,6 @@ int smi_modeset_init(struct smi_device *cdev)
 	if(g_specId == SPC_SM750)
 		smi_bpp = 16;
 
-	//in multi-card with Intel, we can only use 32bpp
-#ifdef PRIME
-	smi_bpp = 32;
-#endif
-
 	drm_mode_config_init(cdev->dev);
 	cdev->mode_info.mode_config_initialized = true;
 
