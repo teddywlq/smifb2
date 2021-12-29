@@ -25,6 +25,11 @@
 #include <drm/drm_vblank.h>
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+#include <drm/drm_aperture.h>
+#endif
+
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
 #include <drm/drm_probe_helper.h>
 #endif
@@ -132,7 +137,11 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	drm_aperture_remove_conflicting_pci_framebuffers(pdev, "smidrmfb");
+#else
 	drm_fb_helper_remove_conflicting_pci_framebuffers(pdev, "smidrmfb");
+#endif
 #else
 	drm_fb_helper_remove_conflicting_pci_framebuffers(pdev, 0, "smidrmfb");
 #endif
@@ -155,7 +164,10 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_pci_disable_device;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
 	dev->pdev = pdev;
+#endif
+
 	pci_set_drvdata(pdev, dev);
 
 	ret = smi_driver_load(dev, ent->driver_data);
@@ -167,7 +179,7 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_smi_driver_unload;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-	if ((g_specId == SPC_SM750 && (dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || g_specId == SPC_SM768)
+	if ((g_specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || g_specId == SPC_SM768)
 		drm_fbdev_generic_setup(dev, dev->mode_config.preferred_depth);
 #endif
 
@@ -215,8 +227,12 @@ static int smi_drm_freeze(struct drm_device *dev)
 	ret = drm_mode_config_helper_suspend(dev);
 	if (ret)
 		return ret;
-	
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pci_save_state(to_pci_dev(dev->dev));
+#else
     pci_save_state(dev->pdev);
+#endif
 
 	LEAVE(0);
 }
@@ -253,9 +269,11 @@ static int smi_drm_resume(struct drm_device *dev)
 	struct smi_device *UNUSED(sdev) = dev->dev_private;
 	int ret;
 
-	
-
-	if (pci_enable_device(dev->pdev))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	if (pci_enable_device(to_pci_dev(dev->dev)))
+#else
+    if (pci_enable_device(dev->pdev))
+#endif	
 		return -EIO;
 
 	ret = smi_drm_thaw(dev);

@@ -196,8 +196,16 @@ struct ttm_bo_driver smi_bo_driver = {
 int smi_mm_init(struct smi_device *smi)
 {
 	int ret;
+	struct pci_dev *pdev;
+	struct drm_vram_mm *vmm __attribute__((unused));
 	struct drm_device *dev = smi->dev;
 	unsigned long vram_size = smi->mc.vram_size;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
 	struct ttm_bo_device *bdev = &smi->ttm.bdev;
@@ -222,9 +230,8 @@ int smi_mm_init(struct smi_device *smi)
 		return ret;
 	}
 #else
-	struct drm_vram_mm *vmm;
-
-	vmm = drm_vram_helper_alloc_mm(dev, pci_resource_start(dev->pdev, 0),
+	
+	vmm = drm_vram_helper_alloc_mm(dev, pci_resource_start(pdev, 0),
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 				       vram_size);
 #else
@@ -238,11 +245,11 @@ int smi_mm_init(struct smi_device *smi)
 	}
 #endif
 
-	arch_io_reserve_memtype_wc(pci_resource_start(dev->pdev, 0),
-				   pci_resource_len(dev->pdev, 0));
+	arch_io_reserve_memtype_wc(pci_resource_start(pdev, 0),
+				   pci_resource_len(pdev, 0));
 
 	smi->fb_mtrr =
-		arch_phys_wc_add(pci_resource_start(dev->pdev, 0), pci_resource_len(dev->pdev, 0));
+		arch_phys_wc_add(pci_resource_start(pdev, 0), pci_resource_len(pdev, 0));
 
 	smi->mm_inited = true;
 	return 0;
@@ -250,7 +257,14 @@ int smi_mm_init(struct smi_device *smi)
 
 void smi_mm_fini(struct smi_device *smi)
 {
-	struct drm_device *dev __attribute__((unused)) = smi->dev;
+	struct pci_dev *pdev;
+	struct drm_device *dev = smi->dev;
+	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 	if (!smi->mm_inited)
 		return;
@@ -260,7 +274,7 @@ void smi_mm_fini(struct smi_device *smi)
 	drm_vram_helper_release_mm(dev);
 #endif
 
-	arch_io_free_memtype_wc(pci_resource_start(dev->pdev, 0), pci_resource_len(dev->pdev, 0));
+	arch_io_free_memtype_wc(pci_resource_start(pdev, 0), pci_resource_len(pdev, 0));
 
 	arch_phys_wc_del(smi->fb_mtrr);
 

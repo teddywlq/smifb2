@@ -603,18 +603,24 @@ static irqreturn_t snd_smi_interrupt(int irq, void *dev_id)
    */
 static int snd_falconi2s_create(struct snd_card *card,
                                          struct drm_device *dev,
-                                         struct sm768chip **rchip)
+                                         struct sm768chip **smichip)
 {
 	int err;
 	int sample_rate = 44100;
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *smi_device = dev->dev_private;
 	struct sm768chip *chip;
 	static struct snd_device_ops ops = {
 		.dev_free = snd_falconi2s_dev_free,
 	};
 
-	*rchip = NULL;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
+
+	*smichip = NULL;
 
 	/* allocate a chip-specific data with zero filled */
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
@@ -652,7 +658,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 
 
 	if(!chip->pvMem){
-		dev_err(&pci->dev, "Map memory failed\n");
+		dev_err(&pdev->dev, "Map memory failed\n");
 		snd_falconi2s_free(chip);
 		err = -EFAULT;
 		return err;
@@ -661,7 +667,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 	}
 	//above 
 
-	chip->irq = pci->irq;
+	chip->irq = pdev->irq;
 
 	dbg_msg("Audio pci irq :%d\n",chip->irq);
 	
@@ -671,7 +677,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 		sample_rate = 44100;
 
 	if(SM768_AudioInit(SAMPLE_BITS, sample_rate)) {
-		dev_err(&pci->dev, "Audio init failed!\n");
+		dev_err(&pdev->dev, "Audio init failed!\n");
 		snd_falconi2s_free(chip);
 		return -1;
 	}
@@ -687,19 +693,19 @@ static int snd_falconi2s_create(struct snd_card *card,
 
 	//Setup ISR. The ISR will move more data from DDR to SRAM.
 	
-	if (request_irq(pci->irq, snd_smi_interrupt, IRQF_SHARED,
+	if (request_irq(pdev->irq, snd_smi_interrupt, IRQF_SHARED,
 		KBUILD_MODNAME, chip_irq_id)) {
-		dev_err(&pci->dev, "unable to grab IRQ %d\n", pci->irq);
+		dev_err(&pdev->dev, "unable to grab IRQ %d\n", pdev->irq);
 		snd_falconi2s_free(chip);
 		return -EBUSY;
 	}
 	sb_IRQUnmask(SB_IRQ_VAL_I2S); 
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,18,0)
-	snd_card_set_dev(card, &pci->dev);
+	snd_card_set_dev(card, &pdev->dev);
 #endif
 
-	*rchip = chip;
+	*smichip = chip;
 	return 0;
 }
 
@@ -708,18 +714,24 @@ static int snd_falconi2s_create(struct snd_card *card,
 int smi_audio_init(struct drm_device *dev)
 {
 	int idx, err;
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *sdev = dev->dev_private;
 	struct snd_pcm *pcm;
 	struct snd_card *card;
 	struct sm768chip *chip;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 	if(audio_en == 1)
 		use_wm8978 = 0;
 	else if(audio_en == 2)
 		use_wm8978 = 1;
 	
-	err = snd_card_new(&pci->dev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1, THIS_MODULE, 0, &card); 
+	err = snd_card_new(&pdev->dev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1, THIS_MODULE, 0, &card); 
 
 
 	
@@ -732,8 +744,8 @@ int smi_audio_init(struct drm_device *dev)
       		return err;
 	}
 
-	strcpy(card->driver, "SiliconMotion Audio");
-	strcpy(card->shortname, "SMI Audio");
+	strcpy(card->driver, "smi-audio");
+	strcpy(card->shortname, "smi-audio");
 	strcpy(card->longname, "SiliconMotion Audio");
 
 	snd_pcm_new(card,"smiaudio_pcm",0,1,1,&pcm);
@@ -748,9 +760,9 @@ int smi_audio_init(struct drm_device *dev)
 	  
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-					      &pci->dev,
+					      &pdev->dev,
 #else
-					      snd_dma_pci_data(pci),
+					      snd_dma_pci_data(pdev),
 #endif
 						P_PERIOD_BYTE*P_PERIOD_MIN, P_PERIOD_BYTE*P_PERIOD_MAX);
 
@@ -778,15 +790,20 @@ int smi_audio_init(struct drm_device *dev)
 
 void smi_audio_remove(struct drm_device *dev)
 {
-	struct pci_dev *pci = dev->pdev;
+	struct pci_dev *pdev;
 	struct smi_device *sdev = dev->dev_private;
 	struct snd_card *card = sdev->card;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 	
-	dbg_msg("perpare to free irq, pci irq:%u, chip_irq_id=0x%p\n", pci->irq, chip_irq_id);
-	if(pci->irq){				
-		free_irq(pci->irq, chip_irq_id);
+	dbg_msg("perpare to free irq, pci irq:%u, chip_irq_id=0x%p\n", pdev->irq, chip_irq_id);
+	if(pdev->irq){				
+		free_irq(pdev->irq, chip_irq_id);
 		dbg_msg("free irq\n");
 	}
 	SM768_AudioStop();

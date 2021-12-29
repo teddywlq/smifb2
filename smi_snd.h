@@ -18,15 +18,9 @@
 #include <sound/initval.h>
 #include <sound/pcm.h>
 
-//#define SAVE_AUDIO_DATA
-
-
 /* definition of the chip-specific record */
 struct sm768chip {
 	struct snd_card *card;
-	struct pci_dev *pci;
-
-	unsigned long port;
 	int irq;
 
 	struct snd_pcm_substream *play_substream;

@@ -287,14 +287,21 @@ static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *de
 int smi_driver_load(struct drm_device *dev, unsigned long flags)
 {
 	struct smi_device *cdev;
+	struct pci_dev *pdev; 
 	int r;
+	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	pdev = to_pci_dev(dev->dev);
+#else
+	pdev = dev->pdev;
+#endif
 
 	cdev = kzalloc(sizeof(struct smi_device), GFP_KERNEL);
 	if (cdev == NULL)
 		return -ENOMEM;
 	dev->dev_private = (void *)cdev;
 
-	switch (dev->pdev->device) {
+	switch (pdev->device) {
 	case PCI_DEVID_LYNX_EXP:
 		g_specId = SPC_SM750;
 		break;
@@ -305,16 +312,16 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		return -ENODEV;
 	}
 
-	r = pci_enable_device(dev->pdev);
+	r = pci_enable_device(pdev);
 
-	r = smi_device_init(cdev, dev, dev->pdev, flags);
+	r = smi_device_init(cdev, dev, pdev, flags);
 	if (r) {
-		dev_err(&dev->pdev->dev, "Fatal error during GPU init: %d\n", r);
+		dev_err(&pdev->dev, "Fatal error during GPU init: %d\n", r);
 		goto out;
 	}
 	if(g_specId == SPC_SM750)
 	{
-	    if (dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW) {
+	    if (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW) {
 			cdev->is_boot_gpu = true;
 		}
 		ddk750_initChip();
@@ -352,13 +359,13 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 
 	r = smi_mm_init(cdev);
 	if (r) {
-		dev_err(&dev->pdev->dev, "fatal err on mm init\n");
+		dev_err(&pdev->dev, "fatal err on mm init\n");
 		goto out;
 	}
 
 	drm_vblank_init(dev, dev->mode_config.num_crtc);
 
-	r = drm_irq_install(dev, dev->pdev->irq);
+	r = drm_irq_install(dev, pdev->irq);
 	if (r)
 		DRM_ERROR("install irq failed , ret = %d\n", r);
 
@@ -524,8 +531,15 @@ static void smi_vram_fini(struct smi_device *cdev)
 /* Map the framebuffer from the card and configure the core */
 static int smi_vram_init(struct smi_device *cdev)
 {
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	struct pci_dev *pdev = to_pci_dev(cdev->dev->dev);
+	/* BAR 0 is VRAM */
+	cdev->mc.vram_base = pci_resource_start(pdev, 0);
+#else	
 	/* BAR 0 is VRAM */
 	cdev->mc.vram_base = pci_resource_start(cdev->dev->pdev, 0);
+#endif
 
 	/* VRAM Size */
 	if (g_specId == SPC_SM750)
@@ -556,7 +570,7 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 
 	dma_bits = 40;
 	cdev->need_dma32 = false;
-	ret = pci_set_dma_mask(cdev->dev->pdev, DMA_BIT_MASK(dma_bits));
+	ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(dma_bits));
 	if (ret) {
 		cdev->need_dma32 = true;
 		dma_bits = 32;
@@ -572,8 +586,8 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 #endif
 
 	/* BAR 0 is the framebuffer, BAR 1 contains registers */
-	cdev->rmmio_base = pci_resource_start(cdev->dev->pdev, 1);
-	cdev->rmmio_size = pci_resource_len(cdev->dev->pdev, 1);
+	cdev->rmmio_base = pci_resource_start(pdev, 1);
+	cdev->rmmio_size = pci_resource_len(pdev, 1);
 	cdev->rmmio = ioremap(cdev->rmmio_base, cdev->rmmio_size);
 
 	if (cdev->rmmio == NULL)
