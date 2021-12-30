@@ -14,7 +14,11 @@
 #else
 #include <linux/pci.h>
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 #include <drm/drm_irq.h>
+#endif
+
 #include <drm/drm_vblank.h>
 #else
 #include <drm/drmP.h>
@@ -365,7 +369,12 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 
 	drm_vblank_init(dev, dev->mode_config.num_crtc);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 	r = drm_irq_install(dev, pdev->irq);
+#else
+	r = request_irq(pdev->irq, smi_drm_interrupt, IRQF_SHARED,
+				  KBUILD_MODNAME, dev);
+#endif
 	if (r)
 		DRM_ERROR("install irq failed , ret = %d\n", r);
 
@@ -394,9 +403,22 @@ out:
 void smi_driver_unload(struct drm_device *dev)
 {
 	struct smi_device *cdev = dev->dev_private;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	struct pci_dev *pdev = to_pci_dev(dev->dev);
+#endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 	if (dev->irq_enabled)
 		drm_irq_uninstall(dev);
+#else
+	free_irq(pdev->irq, dev);
+	/* Disable *all* interrupts */
+	if (g_specId == SPC_SM750) {
+		ddk750_disable_IntMask();
+	} else if (g_specId == SPC_SM768) {
+		ddk768_disable_IntMask();
+	}
+#endif
 
 	if (cdev == NULL)
 		return;

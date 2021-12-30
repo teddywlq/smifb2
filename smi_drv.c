@@ -137,7 +137,9 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	drm_aperture_remove_conflicting_pci_framebuffers(pdev, &driver);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	drm_aperture_remove_conflicting_pci_framebuffers(pdev, "smidrmfb");
 #else
 	drm_fb_helper_remove_conflicting_pci_framebuffers(pdev, "smidrmfb");
@@ -346,6 +348,8 @@ static void smi_disable_vblank(struct drm_device *dev, unsigned int pipe)
 	}
 }
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 static void smi_irq_preinstall(struct drm_device *dev)
 {
 	// To Do....
@@ -368,10 +372,8 @@ static void smi_irq_uninstall(struct drm_device *dev)
 		ddk768_disable_IntMask();
 	}
 }
-
-#ifndef DRM_IRQ_ARGS
-#define DRM_IRQ_ARGS int irq, void *arg
 #endif
+
 irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 {
 	struct drm_device *dev = (struct drm_device *)arg;
@@ -480,10 +482,12 @@ static struct drm_driver driver = {
 	.enable_vblank = smi_enable_vblank,
 	.disable_vblank = smi_disable_vblank,
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 	.irq_preinstall = smi_irq_preinstall,
 	.irq_postinstall = smi_irq_postinstall,
 	.irq_uninstall = smi_irq_uninstall,
 	.irq_handler = smi_drm_interrupt,
+#endif
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
 

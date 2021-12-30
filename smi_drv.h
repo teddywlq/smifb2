@@ -38,11 +38,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20211001"
+#define DRIVER_DATE		"20211220"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		0
-#define DRIVER_PATCHLEVEL	7
+#define DRIVER_PATCHLEVEL	8
 
 #define SMIFB_CONN_LIMIT 3
 
@@ -52,7 +52,7 @@
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.0.7.0"
+#define _version_	"2.0.8.0"
 
 #undef  NO_WC
 
@@ -218,6 +218,11 @@ void smi_audio_remove(struct drm_device *dev);
 void smi_audio_suspend(void);
 void smi_audio_resume(void);
 
+#ifndef DRM_IRQ_ARGS
+#define DRM_IRQ_ARGS int irq, void *arg
+#endif
+
+irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS);
 
 
 

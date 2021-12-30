@@ -230,18 +230,24 @@ int smi_mm_init(struct smi_device *smi)
 		return ret;
 	}
 #else
-	
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)	
 	vmm = drm_vram_helper_alloc_mm(dev, pci_resource_start(pdev, 0),
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 				       vram_size);
 #else
 				       vram_size, &drm_gem_vram_mm_funcs);
 #endif
-
 	if (IS_ERR(vmm)) {
 		ret = PTR_ERR(vmm);
-		DRM_ERROR("Error initializing VRAM MM; %d\n", ret);
-		return ret;
+
+#else
+		ret = drmm_vram_helper_init(dev, pci_resource_start(pdev, 0),
+				    vram_size);
+		if (ret) {
+#endif
+			DRM_ERROR("Error initializing VRAM MM; %d\n", ret);
+			return ret;
 	}
 #endif
 
@@ -270,7 +276,7 @@ void smi_mm_fini(struct smi_device *smi)
 		return;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
 	ttm_bo_device_release(&smi->ttm.bdev);
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 	drm_vram_helper_release_mm(dev);
 #endif
 
