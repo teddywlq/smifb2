@@ -441,6 +441,9 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	bo = gem_to_smi_bo(fb->obj[0]);
 	smi_bo_pin(bo, TTM_PL_FLAG_VRAM, &plane_addr);
 #endif
+
+	fb->pitches[0] = (fb->pitches[0] + 15) & ~15;
+
 	offset = plane_addr + y * fb->pitches[0] + x * fb->format->cpp[0];
 	if (g_specId == SPC_SM750) {
 		hw750_set_base(disp_ctrl, fb->pitches[0], offset);

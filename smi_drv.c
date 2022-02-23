@@ -411,6 +411,15 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 	return IRQ_NONE;
 }
 
+
+static int smi_dumb_create(struct drm_file *file, struct drm_device *dev,
+			     struct drm_mode_create_dumb *args)
+{
+	return drm_gem_vram_fill_create_dumb(file, dev, 0, 128, args);
+}
+
+
+
 static const struct dev_pm_ops smi_pm_ops = {
 	.suspend = smi_pm_suspend,
 	.resume = smi_pm_resume,
@@ -471,7 +480,14 @@ static struct drm_driver driver = {
 	.minor = DRIVER_MINOR,
 	.patchlevel = DRIVER_PATCHLEVEL,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
-	DRM_GEM_VRAM_DRIVER,
+	.debugfs_init             = drm_vram_mm_debugfs_init,
+	.dumb_create		  = smi_dumb_create,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
+	.dumb_map_offset		  = drm_gem_ttm_dumb_map_offset,
+#else
+	.dumb_map_offset		  = drm_gem_vram_driver_dumb_mmap_offset,
+#endif
+	.gem_prime_mmap		  = drm_gem_prime_mmap,
 #else
 	.gem_free_object_unlocked = smi_gem_free_object,
 	.dumb_create = smi_dumb_create,
