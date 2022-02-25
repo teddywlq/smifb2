@@ -831,6 +831,11 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 			return MODE_NOMODE;
 	}
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0))	
+	if ((mode->hdisplay == 1366) && (mode->vdisplay == 768))
+		return MODE_NOMODE;
+#endif
+
 	if(lvds_channel && (!lcd_scale)){
 		if (connector->connector_type == DRM_MODE_CONNECTOR_DVII) {              
 				if ((mode->hdisplay == fixed_width) && (mode->vdisplay == fixed_height))                
