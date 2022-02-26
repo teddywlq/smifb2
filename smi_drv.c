@@ -482,7 +482,7 @@ static struct drm_driver driver = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 	.debugfs_init             = drm_vram_mm_debugfs_init,
 	.dumb_create		  = smi_dumb_create_align,
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
 	.dumb_map_offset		  = drm_gem_ttm_dumb_map_offset,
 #else
 	.dumb_map_offset		  = drm_gem_vram_driver_dumb_mmap_offset,
