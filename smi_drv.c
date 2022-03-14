@@ -249,9 +249,9 @@ static int smi_drm_thaw(struct drm_device *dev)
 	if(g_specId == SPC_SM750)
 			hw750_resume(sdev->regsave);
 	else if(g_specId == SPC_SM768){
-			if(audio_en)
-				smi_audio_resume();
 			hw768_resume(sdev->regsave_768);
+		if(audio_en)
+			smi_audio_resume();
 		if (lvds_channel == 1)
 			hw768_enable_lvds(1);
 		else if (lvds_channel == 2) {
@@ -281,7 +281,7 @@ static int smi_drm_resume(struct drm_device *dev)
 	ret = smi_drm_thaw(dev);
 	if (ret)
 		return ret;
-	
+
 	return drm_mode_config_helper_resume(dev);
 }
 
