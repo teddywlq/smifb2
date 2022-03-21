@@ -311,3 +311,48 @@ void ddk750_disable_IntMask(void)
     pokeRegisterDWord(INT_MASK, 0);
 }
 
+
+void hw750_setgamma(disp_control_t dispCtrl, unsigned long enable)
+{
+	unsigned long value;
+	unsigned long regCtrl;
+
+
+
+	if(dispCtrl == PRIMARY_CTRL)
+		regCtrl = PRIMARY_DISPLAY_CTRL;
+	else
+		regCtrl = SECONDARY_DISPLAY_CTRL;
+
+
+	value = peekRegisterDWord(regCtrl);
+	
+	if (enable)
+	    value = FIELD_SET(value, PRIMARY_DISPLAY_CTRL, GAMMA, ENABLE);
+	else
+	    value = FIELD_SET(value, PRIMARY_DISPLAY_CTRL, GAMMA, DISABLE);
+	    
+	pokeRegisterDWord(regCtrl, value);    
+}
+
+void hw750_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[])
+{
+	unsigned int i, v;
+	unsigned long regCtrl;
+
+	if(dispCtrl == PRIMARY_CTRL)
+		regCtrl = PRIMARY_PALETTE_RAM;
+	else
+		regCtrl = SECONDARY_PALETTE_RAM;
+
+	for (i = 0; i < size; i++) {
+		v = (lut_r[i] << 16);
+		v |= (lut_g[i] << 8);
+		v |= lut_b[i];
+		pokeRegisterDWord(regCtrl + (i * 4), v);
+	}
+}
+
+
+
+

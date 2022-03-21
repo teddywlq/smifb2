@@ -107,6 +107,9 @@ static int smi_crtc_gamma_set(struct drm_crtc *crtc, u16 *r, u16 *g,
 			 DisableDoublePixel(1);
 		}
 
+	}else if(g_specId == SPC_SM750) {
+		hw750_setgamma(dst_ctrl, true);
+		hw750_load_lut(dst_ctrl, crtc->gamma_size, smi_crtc->lut_r, smi_crtc->lut_g, smi_crtc->lut_b);
 	}
 	
 	return 0;

@@ -163,4 +163,9 @@ int ddk750_Release9022DDC(void);
 
 void ddk750_DoEdidRead(void);
 
+void hw750_setgamma(disp_control_t dispCtrl, unsigned long enable);
+void hw750_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[]);
+
+
+
 #endif
