@@ -38,11 +38,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20220326"
+#define DRIVER_DATE		"20220501"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		1
-#define DRIVER_PATCHLEVEL	0
+#define DRIVER_PATCHLEVEL	1
 
 #define SMIFB_CONN_LIMIT 3
 
