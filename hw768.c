@@ -416,7 +416,7 @@ void hw768_SetPixelClockFormat(disp_control_t dispControl,unsigned int is_half)
     pokeRegisterDWord(ulDispCtrlAddr, ulDispCtrlReg);
 }
 
-void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable)
+void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable, unsigned long lvds_ch)
 {
 	unsigned long value;
 	unsigned long regCtrl;
@@ -430,7 +430,13 @@ void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable)
 	    value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, ENABLE);
 	else
 	    value = FIELD_SET(value, DISPLAY_CTRL, GAMMA, DISABLE);
-	    
+
+	if((lvds_ch == 2) && (dispCtrl == CHANNEL0_CTRL))   //dual channel LVDS and channel 0 gamma setting
+		value = FIELD_SET(value, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, ENABLE);
+	else{
+		value = FIELD_SET(value, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, DISABLE);
+	}
+	   	
 	pokeRegisterDWord(regCtrl, value);    
 }
 

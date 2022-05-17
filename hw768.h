@@ -172,7 +172,7 @@ void ddk768_disable_IntMask(void);
 void hw768_suspend(struct smi_768_register * pSave);
 void hw768_resume(struct smi_768_register * pSave);
 
-void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable);
+void hw768_setgamma(disp_control_t dispCtrl, unsigned long enable,unsigned long lvds_ch);
 void hw768_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u8 lut_b[]);
 
 
