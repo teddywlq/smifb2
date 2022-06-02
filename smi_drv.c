@@ -531,7 +531,11 @@ static struct drm_driver driver = {
 
 static int __init smi_init(void)
 {
-	if (vgacon_text_force() && smi_modeset == -1)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0)
+        if (drm_firmware_drivers_only() && smi_modeset == -1)
+#else
+        if (vgacon_text_force() && smi_modeset == -1)
+#endif
 		return -EINVAL;
 
 	if (smi_modeset == 0)
