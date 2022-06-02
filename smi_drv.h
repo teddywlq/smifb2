@@ -52,7 +52,7 @@
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.1.0.0"
+#define _version_	"2.1.1.0"
 
 #undef  NO_WC
 
