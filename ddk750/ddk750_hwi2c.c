@@ -16,7 +16,87 @@
 #include "ddk750_help.h"
 #include "ddk750_hwi2c.h"
 
+
 #define MAX_HWI2C_FIFO                  16
+
+
+static unsigned long hwI2CWriteData(
+    unsigned char deviceAddress,
+    unsigned long length,
+    unsigned char *pBuffer
+);
+
+static unsigned long hwI2CReadData(
+    unsigned char deviceAddress,
+    unsigned long length,
+    unsigned char *pBuffer
+);
+
+static int ddk750_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+                           int num)
+{
+    unsigned long ret;
+    int i, count = 0;
+
+    for (i = 0; i < (num - 1); i++)
+        if (msgs[i].flags & I2C_M_RD)
+        {
+            pr_err("only one read message supported, has to be last\n");
+            return -EOPNOTSUPP;
+        }
+
+    while (msgs->len && (count < num))
+    {
+		msgs->addr = msgs->addr << 1;
+        if (!(msgs->flags & I2C_M_RD))
+        {
+            ret = hwI2CWriteData(
+                msgs->addr,
+                msgs->len,
+                msgs->buf);
+            if (ret < msgs->len)
+            {
+                pr_err("ddk50 i2c xfer tx failed %ld.\n", ret);
+                break;
+            }
+        }
+        else
+        {
+            ret = hwI2CReadData(
+                msgs->addr,
+                msgs->len,
+                msgs->buf);
+            if (ret < msgs->len)
+            {
+                pr_err("ddk750 i2c xfer rx failed %ld.\n", ret);
+                break;
+            }
+        }
+
+        msgs++;
+        count++;
+    }
+
+    if (count < num)
+    {
+        pr_err("ddk750 i2c xfer failed %d(%d).\n", count, num);
+        return -EIO;
+    }
+
+    return num;
+}
+
+static u32 ddk750_i2c_func(struct i2c_adapter *adap)
+{
+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+}
+
+
+static const struct i2c_algorithm ddk750_i2c_algo = {
+	.master_xfer	= ddk750_i2c_xfer,
+	.functionality	= ddk750_i2c_func
+};
+
 
 /*
  *  This function initializes the hardware i2c
@@ -59,6 +139,29 @@ long ddk750_hwI2CInit(
     return 0;
 }
 
+long ddk750_AdaptHWI2CInit(struct smi_connector *connector)
+{
+    int ret;
+
+    ddk750_hwI2CInit(1);
+
+    connector->adapter.owner = THIS_MODULE;
+    connector->adapter.class = I2C_CLASS_DDC;
+    snprintf(connector->adapter.name, I2C_NAME_SIZE, "SMI HW I2C Bus");
+    connector->adapter.dev.parent = connector->base.dev->dev;
+    i2c_set_adapdata(&connector->adapter, connector);
+	connector->adapter.algo = &ddk750_i2c_algo;
+    ret = i2c_add_adapter(&connector->adapter);
+	if (ret)
+    {
+        pr_err("HW i2c add adapter failed. %d\n", ret);
+		return -1;
+    }
+
+    return 0;
+}
+
+
 /*
  *  This function closes the hardware i2c.
  */
@@ -79,6 +182,12 @@ void ddk750_hwI2CClose()
     value = FIELD_SET(value, GPIO_MUX, 30, GPIO);
     value = FIELD_SET(value, GPIO_MUX, 31, GPIO);
     pokeRegisterDWord(GPIO_MUX, value);
+}
+
+long ddk750_AdaptHWI2CCleanBus(struct smi_connector *connector)
+{
+	ddk750_hwI2CClose();
+	return 0;
 }
 
 /*
@@ -217,8 +326,9 @@ static unsigned long hwI2CReadData(
             break;
 
         /* Save the data to the given buffer */
-        for (i = 0; i <= count; i++)
-		    *pBuffer++ = peekRegisterByte(I2C_DATA0 + i);
+        for (i = 0; i <= count; i++) {
+		*pBuffer++ = peekRegisterByte(I2C_DATA0 + i);
+	}
 
         /* Substract length by 16 */
         length -= (count + 1);

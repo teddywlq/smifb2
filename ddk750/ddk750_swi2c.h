@@ -13,6 +13,9 @@
 #ifndef _SWI2C_H_
 #define _SWI2C_H_
 
+#include "../smi_drv.h"
+
+
 /* Default i2c CLK and Data GPIO. These are the default i2c pins */
 #define DEFAULT_I2C_SCL                     30
 #define DEFAULT_I2C_SDA                     31
@@ -111,5 +114,9 @@ void swI2CSCL(unsigned char value);
  *      value	- Bit value to set to the SCL or SDA (0 = low, 1 = high)
  */
 void swI2CSDA(unsigned char value);
+
+long ddk750_AdaptSWI2CInit(struct smi_connector *smi_connector);
+
+
 
 #endif  /* _SWI2C_H_ */

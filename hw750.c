@@ -17,8 +17,10 @@
 #include "ddk750/ddk750_power.h"
 #include "ddk750/ddk750_edid.h"
 #include "ddk750/ddk750_cursor.h"
-//#include "smi_drv.h"
-//#include "hw750.h"
+#include "ddk750/ddk750_swi2c.h"
+#include "ddk750/ddk750_hwi2c.h"
+
+
 #ifdef USE_HDMICHIP
 #include "ddk750/ddk750_sii9022.h"
 #endif
@@ -351,6 +353,41 @@ void hw750_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u
 		v |= lut_b[i];
 		pokeRegisterDWord(regCtrl + (i * 4), v);
 	}
+}
+
+
+long hw750_AdaptI2CInit(struct smi_connector *smi_connector)
+{
+    if(hwi2c_en && (smi_connector->base.connector_type == DRM_MODE_CONNECTOR_DVII))
+    {
+        smi_connector->i2c_hw_enabled = 1;
+    }
+    else
+    {
+        smi_connector->i2c_hw_enabled = 0;      
+    }
+
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk750_AdaptHWI2CInit(smi_connector);
+    }
+    else
+    {
+        return ddk750_AdaptSWI2CInit(smi_connector); 
+    }
+}
+
+
+long hw750_AdaptI2CCleanBus(struct drm_connector *connector)
+{
+    struct smi_connector *smi_connector = to_smi_connector(connector);
+    
+    if(smi_connector->i2c_hw_enabled)
+    {
+        return ddk750_AdaptHWI2CCleanBus(smi_connector);
+    }
+
+    return 0;
 }
 
 

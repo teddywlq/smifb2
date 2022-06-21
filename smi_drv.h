@@ -32,6 +32,9 @@
 #endif
 #endif
 
+#include <linux/i2c-algo-bit.h>
+#include <linux/i2c.h>
+
 #include "smi_priv.h"
 
 #define DRIVER_AUTHOR "SiliconMotion"
@@ -122,9 +125,12 @@ struct smi_device {
 		struct smi_750_register *regsave;
 		struct smi_768_register *regsave_768;
 	};
-	struct edid dvi_edid[2];
-	struct edid vga_edid[2];
-	struct edid hdmi_edid[2];
+#ifdef USE_HDMICHIP
+	struct edid si9022_edid[2];
+#endif
+	void *dvi_edid;
+	void *vga_edid;
+	void *hdmi_edid;
 	struct drm_display_mode *fixed_mode;
 	bool is_hdmi;
 	bool is_boot_gpu;
@@ -137,7 +143,18 @@ struct smi_encoder {
 
 struct smi_connector {
 	struct drm_connector base;
+	struct i2c_adapter adapter;
+	struct i2c_algo_bit_data bit_data;
+	unsigned char i2c_scl;
+	unsigned char i2c_sda;
+	unsigned char i2cNumber;
+	bool i2c_hw_enabled;
 };
+
+static inline struct smi_connector *to_smi_connector(struct drm_connector *connector)
+{
+	return container_of(connector, struct smi_connector, base);
+}
 
 #define MAX_CRTC 2
 #define MAX_ENCODER 3

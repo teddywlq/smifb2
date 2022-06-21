@@ -12,6 +12,9 @@
 #ifndef _HWI2C_H_
 #define _HWI2C_H_
 
+#include "../smi_drv.h"
+
+
 /*
  *  This function initializes the hardware i2c
  *
@@ -63,5 +66,11 @@ long ddk750_hwI2CWriteReg(
     unsigned char registerIndex, 
     unsigned char data
 );
+
+
+long ddk750_AdaptHWI2CInit(struct smi_connector *connector);
+long ddk750_AdaptHWI2CCleanBus(struct smi_connector *connector);
+
+
 
 #endif  /* _HWI2C_H_ */

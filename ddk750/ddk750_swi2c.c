@@ -10,11 +10,14 @@
 *  implementation.
 * 
 *******************************************************************/
+#include <linux/delay.h>
+
 #include "ddk750_defs.h"
 #include "ddk750_hardware.h"
 #include "ddk750_power.h"
 #include "ddk750_help.h"
 #include "ddk750_swi2c.h"
+
 
 /*******************************************************************
  * I2C Software Master Driver:   
@@ -549,3 +552,263 @@ long swI2CWriteReg(
 
     return returnValue;
 }
+
+long adapterI2CInit(
+    unsigned char i2cClkGPIO, 
+    unsigned char i2cDataGPIO
+)
+{
+    int i;
+    
+    /* Return 0 if the GPIO pins to be used is out of range. The range is only from [0..63] */
+    if ((i2cClkGPIO > 31) || (i2cDataGPIO > 31))
+        return (-1);
+    
+    /* Initialize the GPIO pin for the i2c Clock Register */
+    g_i2cClkGPIOMuxReg = GPIO_MUX;   
+    g_i2cClkGPIODataReg = GPIO_DATA;    
+    g_i2cClkGPIODataDirReg = GPIO_DATA_DIRECTION;
+    
+    /* Initialize the Clock GPIO Offset */
+//    g_i2cClockGPIO = i2cClkGPIO;
+    
+    /* Initialize the GPIO pin for the i2c Data Register */
+    g_i2cDataGPIOMuxReg = GPIO_MUX;    
+    g_i2cDataGPIODataReg = GPIO_DATA;    
+    g_i2cDataGPIODataDirReg = GPIO_DATA_DIRECTION;
+    
+    /* Initialize the Data GPIO Offset */
+//    g_i2cDataGPIO = i2cDataGPIO;
+
+    /* Enable the GPIO pins for the i2c Clock and Data (GPIO MUX) */
+    pokeRegisterDWord(g_i2cClkGPIOMuxReg, 
+                      peekRegisterDWord(g_i2cClkGPIOMuxReg) & ~(1 << i2cClkGPIO));
+    pokeRegisterDWord(g_i2cDataGPIOMuxReg, 
+                      peekRegisterDWord(g_i2cDataGPIOMuxReg) & ~(1 << i2cDataGPIO));
+
+    /* Enable GPIO power */
+    enableGPIO(1);
+
+    /* Clear the i2c lines. */
+    for(i=0; i<9; i++) 
+        swI2CStop();
+
+    return 0;
+}
+
+static void adapterI2CSCL(unsigned char value, unsigned char i2cClockGPIO)
+{
+    unsigned long ulGPIOData;
+    unsigned long ulGPIODirection;
+
+    ulGPIODirection = peekRegisterDWord(g_i2cClkGPIODataDirReg);
+    if (value) /* High */
+    {
+        /* Set direction as input. This will automatically pull the signal up. */
+        ulGPIODirection &= ~(1 << i2cClockGPIO);
+        pokeRegisterDWord(g_i2cClkGPIODataDirReg, ulGPIODirection);
+    }
+    else /* Low */
+    {
+        /* Set the signal down */
+        ulGPIOData = peekRegisterDWord(g_i2cClkGPIODataReg);
+        ulGPIOData &= ~(1 << i2cClockGPIO);
+        pokeRegisterDWord(g_i2cClkGPIODataReg, ulGPIOData);
+
+        /* Set direction as output */
+        ulGPIODirection |= (1 << i2cClockGPIO);
+        pokeRegisterDWord(g_i2cClkGPIODataDirReg, ulGPIODirection);
+    }
+}
+
+/*
+ *  This function read the data from the SDA GPIO pin
+ *
+ *  Return Value:
+ *      The SDA data bit sent by the Slave
+ */
+static unsigned char adapterI2CReadSCL(unsigned char i2cClockGPIO)
+{
+    unsigned long ulGPIODirection;
+    unsigned long ulGPIOData;
+
+    /* Make sure that the direction is input (High) */
+    ulGPIODirection = peekRegisterDWord(g_i2cClkGPIODataDirReg);
+    if ((ulGPIODirection & (1 << i2cClockGPIO)) != (~(1 << i2cClockGPIO)))
+    {
+        ulGPIODirection &= ~(1 << i2cClockGPIO);
+        pokeRegisterDWord(g_i2cClkGPIODataDirReg, ulGPIODirection);
+    }
+
+
+
+    /* Now read the SCL line */
+    ulGPIOData = peekRegisterDWord(g_i2cClkGPIODataReg);
+    if (ulGPIOData & (1 << i2cClockGPIO))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+static void adapterI2CSDA(unsigned char value, unsigned char i2cDataGPIO)
+{
+    unsigned long ulGPIOData;
+    unsigned long ulGPIODirection;
+
+    ulGPIODirection = peekRegisterDWord(g_i2cDataGPIODataDirReg);
+    if (value) /* High */
+    {
+        /* Set direction as input. This will automatically pull the signal up. */
+        ulGPIODirection &= ~(1 << i2cDataGPIO);
+        pokeRegisterDWord(g_i2cDataGPIODataDirReg, ulGPIODirection);
+    }
+    else /* Low */
+    {
+        /* Set the signal down */
+        ulGPIOData = peekRegisterDWord(g_i2cDataGPIODataReg);
+        ulGPIOData &= ~(1 << i2cDataGPIO);
+        pokeRegisterDWord(g_i2cDataGPIODataReg, ulGPIOData);
+
+        /* Set direction as output */
+        ulGPIODirection |= (1 << i2cDataGPIO);
+        pokeRegisterDWord(g_i2cDataGPIODataDirReg, ulGPIODirection);
+    }
+}
+
+/*
+ *  This function read the data from the SDA GPIO pin
+ *
+ *  Return Value:
+ *      The SDA data bit sent by the Slave
+ */
+static unsigned char adapterI2CReadSDA(unsigned char i2cDataGPIO)
+{
+    unsigned long ulGPIODirection;
+    unsigned long ulGPIOData;
+
+    /* Make sure that the direction is input (High) */
+    ulGPIODirection = peekRegisterDWord(g_i2cDataGPIODataDirReg);
+    if ((ulGPIODirection & (1 << i2cDataGPIO)) != (~(1 << i2cDataGPIO)))
+    {
+        ulGPIODirection &= ~(1 << i2cDataGPIO);
+        pokeRegisterDWord(g_i2cDataGPIODataDirReg, ulGPIODirection);
+    }
+
+    /* Now read the SDA line */
+    ulGPIOData = peekRegisterDWord(g_i2cDataGPIODataReg);
+    if (ulGPIOData & (1 << i2cDataGPIO))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+static void smi_ddc_setsda(void *data, int state)
+{
+    struct smi_connector *connector = data;
+    adapterI2CSDA(state, connector->i2c_sda);
+    /* smi_set_i2c_signal(data, I2C_SDA_MASK, state); */
+}
+
+static void smi_ddc_setscl(void *data, int state)
+{
+    struct smi_connector *connector = data;
+    adapterI2CSCL(state, connector->i2c_scl);
+    /* smi_set_i2c_signal(data, I2C_SCL_MASK, state); */
+}
+
+static int smi_ddc_getsda(void *data)
+{
+
+    struct smi_connector *connector = data;
+    return (int)adapterI2CReadSDA(connector->i2c_sda);
+    /* return smi_get_i2c_signal(data, I2C_SDA_MASK); */
+}
+
+static int smi_ddc_getscl(void *data)
+{
+    struct smi_connector *connector = data;
+    return (int)adapterI2CReadSCL(connector->i2c_scl);
+    /* return smi_get_i2c_signal(data, I2C_SCL_MASK); */
+}
+
+static int smi_ddc_create(struct smi_connector *connector)
+{
+    connector->adapter.owner = THIS_MODULE;
+    connector->adapter.class = I2C_CLASS_DDC;
+    snprintf(connector->adapter.name, I2C_NAME_SIZE, "SMI SW I2C Bit Bus");
+    connector->adapter.dev.parent = connector->base.dev->dev;
+    i2c_set_adapdata(&connector->adapter, connector);
+    connector->adapter.algo_data = &connector->bit_data;
+
+    connector->bit_data.udelay = 2; /* 0x3ff ticks, 168MHZ */
+    connector->bit_data.timeout = usecs_to_jiffies(2200);
+    connector->bit_data.data = connector;
+    connector->bit_data.setsda = smi_ddc_setsda;
+    connector->bit_data.setscl = smi_ddc_setscl;
+    connector->bit_data.getsda = smi_ddc_getsda;
+    connector->bit_data.getscl = smi_ddc_getscl;
+
+    if (i2c_bit_add_bus(&connector->adapter))
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+long ddk750_AdaptSWI2CInit(struct smi_connector *smi_connector)
+{
+    struct drm_connector *connector = &smi_connector->base;
+    unsigned char i2cClkGPIO;
+    unsigned char i2cDataGPIO;
+
+    if (connector->connector_type == DRM_MODE_CONNECTOR_DVII)
+    {
+        i2cClkGPIO = 30;
+        i2cDataGPIO = 31;
+    }
+    else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA)
+    {
+        i2cClkGPIO = 17;
+        i2cDataGPIO = 18;
+    }
+    else
+    {
+        return -1;
+    }
+
+    smi_connector->i2c_scl = i2cClkGPIO;
+    smi_connector->i2c_sda = i2cDataGPIO;
+
+    if (adapterI2CInit(i2cClkGPIO, i2cDataGPIO))
+    {
+        return (-1);
+    }
+
+#if 0
+    /* Clear the i2c lines. */
+    {
+        int i = 0;
+        for (i = 0; i < 9; i++)
+            ddk768_swI2CStop();
+    }
+#endif
+
+    udelay(20);
+
+    if (smi_ddc_create(smi_connector))
+    {       
+        return -1;
+    }
+	
+    return 0;
+}
+

@@ -15,6 +15,94 @@
 #include "ddk768_power.h"
 #include "ddk768_hwi2c.h"
 #include "ddk768_help.h"
+
+unsigned long hwI2CWriteData(
+    unsigned char i2cNumber, //I2C0 or I2C1
+    unsigned char deviceAddress,
+    unsigned long length,
+    unsigned char *pBuffer
+);
+
+unsigned long hwI2CReadData(
+    unsigned char i2cNumber, //I2C0 or I2C1
+    unsigned char deviceAddress,
+    unsigned long length,
+    unsigned char *pBuffer
+);
+
+static int ddk768_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
+                           int num)
+{
+    struct smi_connector *connector = i2c_get_adapdata(adap);
+    unsigned char i2cNumber = connector->i2cNumber;
+    unsigned long ret;
+    int i, count = 0;
+
+    if(i2cNumber > 1)
+    {
+        return -EOPNOTSUPP;
+    }
+    for (i = 0; i < (num - 1); i++)
+        if (msgs[i].flags & I2C_M_RD)
+        {
+            pr_err("only one read message supported, has to be last\n");
+            return -EOPNOTSUPP;
+        }
+
+    while (msgs->len && (count < num))
+    {
+	    msgs->addr = msgs->addr << 1;
+        if (!(msgs->flags & I2C_M_RD))
+        {
+            ret = hwI2CWriteData(
+                i2cNumber, // I2C0 or I2C1
+                msgs->addr,
+                msgs->len,
+                msgs->buf);
+            if (ret < msgs->len)
+            {
+                pr_err("ddk768 i2c xfer tx failed %ld.\n", ret);
+                break;
+            }
+        }
+        else
+        {
+            ret = hwI2CReadData(
+                i2cNumber, // I2C0 or I2C1
+                msgs->addr,
+                msgs->len,
+                msgs->buf);
+            if (ret < msgs->len)
+            {
+                pr_err("ddk768 i2c xfer rx failed %ld.\n", ret);
+                break;
+            }
+        }
+
+        msgs++;
+        count++;
+    }
+
+    if (count < num)
+    {
+        pr_err("ddk768 i2c xfer failed %d(%d).\n", count, num);
+        return -EIO;
+    }
+
+    return num;
+}
+
+static u32 ddk768_i2c_func(struct i2c_adapter *adap)
+{
+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+}
+
+
+const struct i2c_algorithm ddk768_i2c_algo = {
+	.master_xfer	= ddk768_i2c_xfer,
+	.functionality	= ddk768_i2c_func
+};
+
 /*
  *  This function initializes the hardware i2c
  *
@@ -27,6 +115,9 @@ long ddk768_hwI2CInit(
 )
 {
     unsigned long value, offset;
+    if(i2cNumber > 1) {
+        return -1;
+    }
 
     /* Enable GPIO pins as IIC clock & data */
     if (i2cNumber == 0)
@@ -46,7 +137,7 @@ long ddk768_hwI2CInit(
     value = FIELD_SET(peekRegisterByte(I2C_CTRL+offset), I2C_CTRL, EN, ENABLE);
     value = FIELD_SET(value, I2C_CTRL, MODE, FAST);        
     pokeRegisterByte(I2C_CTRL+offset, value);
-    
+
     return 0;
 }
 
@@ -77,6 +168,7 @@ void ddk768_hwI2CClose(
     value = FIELD_SET(peekRegisterByte(I2C_CTRL+offset), I2C_CTRL, EN, DISABLE);
     pokeRegisterByte(I2C_CTRL+offset, value);
 }
+
 
 /*
  *  This function waits until the transfer is completed within the timeout value.
@@ -224,7 +316,9 @@ unsigned long hwI2CReadData(
 
         /* Save the data to the given buffer */
         for (i = 0; i <= count; i++)
+        {
             *pBuffer++ = peekRegisterByte(I2C_DATA0 + i + offset);
+        }
 
         /* Substract length by 16 */
         length -= (count + 1);
@@ -291,4 +385,42 @@ long ddk768_hwI2CWriteReg(
 
     return (-1);
 }
+
+
+long ddk768_AdaptHWI2CInit(struct smi_connector *connector)
+{
+    int ret;
+
+    if (connector->base.connector_type == DRM_MODE_CONNECTOR_VGA)
+    connector->i2cNumber = 1;
+    else if (connector->base.connector_type == DRM_MODE_CONNECTOR_DVII)
+    connector->i2cNumber = 0;
+    else
+    connector->i2cNumber = 2; // No exist.
+
+    ddk768_hwI2CInit(connector->i2cNumber);
+
+    connector->adapter.owner = THIS_MODULE;
+    connector->adapter.class = I2C_CLASS_DDC;
+    snprintf(connector->adapter.name, I2C_NAME_SIZE, "SMI HW I2C Bus");
+    connector->adapter.dev.parent = connector->base.dev->dev;
+    i2c_set_adapdata(&connector->adapter, connector);
+	connector->adapter.algo = &ddk768_i2c_algo;
+    ret = i2c_add_adapter(&connector->adapter);
+	if (ret)
+    {
+        pr_err("HW i2c add adapter failed. %d\n", ret);
+		return -1;
+    }
+
+    return 0;
+}
+
+long ddk768_AdaptHWI2CCleanBus(struct smi_connector *connector)
+{
+    ddk768_hwI2CClose(connector->i2cNumber);
+    return 0;
+}
+
+
 

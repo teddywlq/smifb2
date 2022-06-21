@@ -124,7 +124,6 @@ static void claim(void)
 	printk("+-----------------------------------------------+\n");
 }
 
-
 static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
@@ -188,6 +187,7 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if ((g_specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || g_specId == SPC_SM768)
 		drm_fbdev_generic_setup(dev, dev->mode_config.preferred_depth);
 #endif
+
 
 	return 0;
 
