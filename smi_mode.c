@@ -218,15 +218,15 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		switch (ctrl_index)
 		{
 			case 0:
-				if (drm_edid_header_is_valid((u8 *)sdev->dvi_edid) == 8)
+				if (sdev->dvi_edid && drm_edid_header_is_valid((u8 *)sdev->dvi_edid) == 8)
 					logicalMode.valid_edid = true;
 				break;
 			case 1:
-				if (drm_edid_header_is_valid((u8 *)sdev->vga_edid) == 8)
+				if (sdev->vga_edid && drm_edid_header_is_valid((u8 *)sdev->vga_edid) == 8)
 					logicalMode.valid_edid = true;
 				break;
 			case 2:
-				if (drm_edid_header_is_valid((u8 *)sdev->hdmi_edid) == 8)
+				if (sdev->hdmi_edid && drm_edid_header_is_valid((u8 *)sdev->hdmi_edid) == 8)
 					logicalMode.valid_edid = true;
 				break;
 			default:
@@ -1048,14 +1048,17 @@ static void smi_connector_destroy(struct drm_connector *connector)
 	if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA && sdev->hdmi_edid)
 	{
 		kfree(sdev->hdmi_edid);
+		sdev->hdmi_edid = NULL;
 	}
 	else if (connector->connector_type == DRM_MODE_CONNECTOR_DVII && sdev->dvi_edid)
 	{
 		kfree(sdev->dvi_edid);
+		sdev->dvi_edid = NULL;
 	}
 	else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA && sdev->vga_edid)
 	{
 		kfree(sdev->vga_edid);
+		sdev->vga_edid = NULL;
 	}
 
 	if(g_specId == SPC_SM768)
