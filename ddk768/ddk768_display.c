@@ -33,19 +33,18 @@
  */
 long initDisplay()
 {
-    //Empty function for now. Just a place holder for future use.
-#if 0
+
     /* set 80024[30:28] and 88024[30:28] to 0x3 in order for the DAC to output stronger signal. */
     unsigned long value;
-    value = peekRegisterDWord(MONITOR_DETECT);
+    value = peekRegisterDWord(CRT_DETECT);
     value &= 0xCFFFFFFF;
     value |= 0x30000000;
-    pokeRegisterDWord(MONITOR_DETECT, value);
-    value = peekRegisterDWord(MONITOR_DETECT + CHANNEL_OFFSET);
+    pokeRegisterDWord(CRT_DETECT, value);
+    value = peekRegisterDWord(CRT_DETECT + CHANNEL_OFFSET);
     value &= 0xCFFFFFFF;
     value |= 0x30000000;
-    pokeRegisterDWord(MONITOR_DETECT + CHANNEL_OFFSET, value);
-#endif
+    pokeRegisterDWord(CRT_DETECT + CHANNEL_OFFSET, value);
+
     return 0;
 
 }

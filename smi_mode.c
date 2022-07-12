@@ -276,6 +276,9 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 			stopVideo(dst_ctrl);
 		}
 		setSingleViewOn(dst_ctrl);
+
+		initDisplay();		
+
 		if(need_to_scale)
 			ddk768_setDisplayPlaneDisableOnly(dst_ctrl);
 #ifdef USE_EP952

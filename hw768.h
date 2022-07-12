@@ -130,6 +130,7 @@ long ddk768_setMode(
     logicalMode_t *pLogicalMode
 );
 long setSingleViewOn(disp_control_t dispOutput);
+long initDisplay(void);	
 
 void setDisplayDPMS(
    disp_control_t dispControl, /* Channel 0 or Channel 1) */
