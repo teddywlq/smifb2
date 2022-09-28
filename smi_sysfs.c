@@ -132,13 +132,6 @@ static ssize_t nopnp_show(__always_unused struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%u\n", force_connect);
 }
 
-static ssize_t version_show(__always_unused struct device *dev,
-			     __always_unused struct device_attribute *attr,
-			     char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%u.%u.%u\n", DRIVER_MAJOR,
-				DRIVER_MINOR, DRIVER_PATCHLEVEL);
-}
 
 // pwm: pwm_ctrl
 // debug: smi_debug
@@ -147,8 +140,7 @@ static ssize_t version_show(__always_unused struct device *dev,
 static struct device_attribute smi_device_attributes[] = {
 	__ATTR_RW(pwm_ctrl),
 	__ATTR_RW(smi_debug),
-	__ATTR_RW(nopnp),
-	__ATTR_RO(version)
+	__ATTR_RW(nopnp)
 };
 
 void smi_sysfs_init(struct kobject *obj)
