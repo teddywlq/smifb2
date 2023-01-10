@@ -31,6 +31,9 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)
 #include <drm/drm_probe_helper.h>
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#include <drm/drm_framebuffer.h>
+#endif
 
 #include "hw750.h"
 #include "hw768.h"

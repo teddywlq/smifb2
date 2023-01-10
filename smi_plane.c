@@ -23,7 +23,9 @@
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 #include <linux/dma-buf-map.h>
 #endif
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#include <drm/drm_framebuffer.h>
+#endif
 
 #include "smi_dbg.h"
 
