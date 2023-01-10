@@ -489,9 +489,13 @@ static int smi_primary_plane_atomic_check(struct drm_plane *plane,
 #endif	
 	if (IS_ERR(crtc_state))
 		LEAVE(PTR_ERR(crtc_state));
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+	LEAVE(drm_atomic_helper_check_plane_state(state, crtc_state, DRM_PLANE_NO_SCALING,
+						  DRM_PLANE_NO_SCALING, false, true));
+#else
 	LEAVE(drm_atomic_helper_check_plane_state(state, crtc_state, DRM_PLANE_HELPER_NO_SCALING,
 						  DRM_PLANE_HELPER_NO_SCALING, false, true));
+#endif
 }
 
 static const struct drm_plane_helper_funcs smi_primary_plane_helper_funcs = {
