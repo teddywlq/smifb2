@@ -18,7 +18,9 @@
 #include <drm/drm_gem_framebuffer_helper.h>
 #include <drm/drm_plane_helper.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+#include <linux/iosys-map.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 #include <linux/dma-buf-map.h>
 #endif
 
@@ -98,7 +100,10 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 #else
 	struct smi_bo *bo;
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	struct iosys_map map;
+	int ret;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	struct dma_buf_map map;
 	int ret;
 #endif

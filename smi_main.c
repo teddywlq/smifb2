@@ -122,7 +122,9 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 	void *src = NULL;
 	unsigned bytesPerPixel = fb->format->cpp[0];
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	struct iosys_map src_map,dst_map;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	struct dma_buf_map src_map,dst_map;
 #endif
 
@@ -592,7 +594,11 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 
 	dma_bits = 40;
 	cdev->need_dma32 = false;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(dma_bits));
+#else
 	ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(dma_bits));
+#endif
 	if (ret) {
 		cdev->need_dma32 = true;
 		dma_bits = 32;
