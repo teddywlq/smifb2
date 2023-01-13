@@ -18,10 +18,14 @@
 #include <drm/drm_gem_framebuffer_helper.h>
 #include <drm/drm_plane_helper.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+#include <linux/iosys-map.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 #include <linux/dma-buf-map.h>
 #endif
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#include <drm/drm_framebuffer.h>
+#endif
 
 #include "smi_dbg.h"
 
@@ -98,7 +102,10 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 #else
 	struct smi_bo *bo;
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
+	struct iosys_map map;
+	int ret;
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	struct dma_buf_map map;
 	int ret;
 #endif
@@ -482,9 +489,13 @@ static int smi_primary_plane_atomic_check(struct drm_plane *plane,
 #endif	
 	if (IS_ERR(crtc_state))
 		LEAVE(PTR_ERR(crtc_state));
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+	LEAVE(drm_atomic_helper_check_plane_state(state, crtc_state, DRM_PLANE_NO_SCALING,
+						  DRM_PLANE_NO_SCALING, false, true));
+#else
 	LEAVE(drm_atomic_helper_check_plane_state(state, crtc_state, DRM_PLANE_HELPER_NO_SCALING,
 						  DRM_PLANE_HELPER_NO_SCALING, false, true));
+#endif
 }
 
 static const struct drm_plane_helper_funcs smi_primary_plane_helper_funcs = {
