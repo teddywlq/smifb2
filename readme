@@ -36,6 +36,6 @@ change the parameter in place, and save the file.
 Or for permanent option, create file like /etc/modprobe.d/smifb.conf with text
 options smifb lvds=1 width=1024 height=768
 
-
-
-
+Module Parameter
+==============
+You can use "modinfo smifb" to get detail information.
