@@ -10,6 +10,10 @@
 #include "smi_dbg.h"
 #include "smi_drv.h"
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
+#include<drm/drm_backport.h>
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
 #include <drm/drm_pci.h>
