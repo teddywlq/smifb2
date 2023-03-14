@@ -170,9 +170,10 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 	if (ret) {
 		DRM_ERROR("failed to map vram\n");
 		goto error;
-	}
+	} 
+	kmap = true;
 	dst = dst_map.vaddr;
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 	if (IS_ERR(dst)) {
 
 		DRM_ERROR("failed to map vram\n");
@@ -182,7 +183,8 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 		if (IS_ERR(dst)) {
 			DRM_ERROR("failed to kmap vram\n");
 			goto error;
-		}
+	}
+	kmap = true;
 	}        
 #else
 	if (IS_ERR(dst)) {
@@ -233,12 +235,17 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 		memcpy_toio(dst + offset, src + offset, (clip.x2 - clip.x1) * bytesPerPixel);
 	}
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
-	if (kmap)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-		drm_gem_vram_vunmap(gbo, dst);
+	if (kmap)		
+	{
+		drm_gem_vram_unpin(gbo);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+		drm_gem_vram_vunmap(gbo, &dst_map);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+		drm_gem_vram_vunmap(gbo, &dst);
 #else	
 		drm_gem_vram_kunmap(gbo);
 #endif
+	}
 #else
 	if (kmap)
 		smi_bo_kunmap(dst_bo);
