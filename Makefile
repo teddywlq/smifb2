@@ -36,14 +36,28 @@ ccflags-y :=-O2 -fno-tree-scev-cprop -D_D_SMI -D_D_SMI_D -D__cdecl
 
 else
 
+ifneq ($(RUN_DEPMOD),)
+	DEPMOD := /sbin/depmod -a
+else
+	DEPMOD := true
+endif
+
+
 knv :=$(shell uname -r)
 KERNELDIR :=/lib/modules/$(knv)/build
 PWD := $(shell pwd)
-
+RM = rm
+MOD_KERNEL_PATH = extra
 default:
 		$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 install:default
-		$(MAKE) -C $(KERNELDIR) M=$(PWD) modules_install
+		$(MAKE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) INSTALL_MOD_DIR=$(MOD_KERNEL_PATH) modules_install
+		$(DEPMOD)
+
+uninstall:
+		$(RM) -rf $(DESTDIR)/lib/modules/$(knv)/$(MOD_KERNEL_PATH)
+		$(DEPMOD)
+
 clean:
 		$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
 
