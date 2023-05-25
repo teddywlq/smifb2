@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  RegSC.h --- SM718 SDK 
-*  This file contains the definitions for the System Configuration registers.
-* 
-*******************************************************************/
 #define SYSTEM_CTRL                                   0x000000
 #define SYSTEM_CTRL_DPMS                              31:30
 #define SYSTEM_CTRL_DPMS_VPHP                         0

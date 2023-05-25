@@ -1,21 +1,3 @@
-/***************************************************************************
-*
-* SIMG PART NUMBER -HDMI Transmitter Driver
-*
-* Copyright (C) (2011, Silicon Image)
-*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation version 2.
-*
-* This program is distributed "as is" WITHOUT ANY WARRANTY of any
-* kind, whether express or implied; without even the implied warranty
-* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-*****************************************************************************/
-
-
 #ifndef _SIHDMITX_902X_TPI_H_
 #define _SIHDMITX_902X_TPI_H_
 
@@ -44,15 +26,13 @@ typedef unsigned int		dword;
 
 
 #define DEV_SUPPORT_EDID  0
-//#define DEV_SUPPORT_HDCP
-//#define DEV_SUPPORT_CEC
-//#define DEV_SUPPORT_3D
+
 
 #define CLOCK_EDGE_RISING
-//#define CLOCK_EDGE_FALLING
+
 
 #define F_9022A_9334
-//#define HW_INT_ENABLE
+
 
 
 

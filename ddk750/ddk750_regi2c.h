@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  RegI2C.h --- Voyager GX SDK 
-*  This file contains the definitions for the HW I2C registers.
-* 
-*******************************************************************/
 #define I2C_BYTE_COUNT                                  0x010040
 #define I2C_BYTE_COUNT_COUNT                            3:0
 

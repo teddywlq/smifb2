@@ -1,19 +1,3 @@
-/***************************************************************************
- *
- * SIMG PART NUMBER - HDMI Transmitter Driver
- *
- * Copyright (C) (2011, Silicon Image)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation version 2.
- *
- * This program is distributed "as is" WITHOUT ANY WARRANTY of any
- * kind, whether express or implied; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- *****************************************************************************/
 #include <linux/wait.h>
 #include <linux/delay.h>
 #include <linux/mutex.h>
@@ -38,23 +22,6 @@ byte 				tpivmode[3];  // saved TPI Reg0x08/Reg0x09/Reg0x0A values.
 
 bool Sii9024A_HDCP_supported=false;  //if the chip is 9024A, you can support HDCP by set this variable to 1.If the chip is 9022A, it means noting.
 
-
-//bool HDCP_Supported=false;
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////         The following functions are related with target system!!!    //////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-//sbit siHdmiTx_HwResetPin = P2^1; 	// Connected to 9022A/4A pin C3 (CRST#)
-
-//extern void DelayMS (word MS);
-//extern byte I2CReadByte ( byte SlaveAddr, byte RegAddr );
-//extern void I2CWriteByte ( byte SlaveAddr, byte RegAddr, byte Data );
-//extern byte I2CReadBlock( byte SlaveAddr, byte RegAddr, byte NBytes, byte * Data );
-//extern byte I2CWriteBlock( byte SlaveAddr, byte RegAddr, byte NBytes, byte * Data );
-//extern byte siiReadSegmentBlockEDID(byte SlaveAddr, byte Segment, byte Offset, byte *Buffer, byte Length);
 
 struct i2c_client *sii902xA = NULL;
 struct i2c_client *siiEDID = NULL;

@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2008 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  intr.h --- SM750/SM718 DDK 
-*  This file contains the source code for the interrupt mechanism 
-* 
-*******************************************************************/
 #ifndef _INTR_H_
 #define _INTR_H_
 

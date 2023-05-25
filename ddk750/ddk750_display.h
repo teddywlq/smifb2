@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  display.h --- SM750/SM718 DDK
-*  This file contains the function prototypes for the display.
-* 
-*******************************************************************/
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 

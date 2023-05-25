@@ -1,28 +1,10 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2008 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  DEFS.H (The name of this file is defs.h in 718 DDK)
-*  This file contains register and common macro definitions.
-* 
-*******************************************************************/
 #ifndef _DEFS_H_
 #define _DEFS_H_
 
-/* For validation purpose only */
-/*#define SM750_AA*/
-//#include "ddk750_help.h"
+
 #include "ddk750_regsc.h"
 #include "ddk750_reggpio.h"
-//#include "ddk750_regpwm.h"
-//#include "ddk750_regssp.h"
 #include "ddk750_regdc.h"
-//#include "ddk750_regdma.h"
-//#include "ddk750_regde.h"
-//#include "ddk750_regzv.h"
 #include "ddk750_regi2c.h"
 
 /* Internal macros */

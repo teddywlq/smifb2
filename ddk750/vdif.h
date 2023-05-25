@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  vdif.h --- SMI DDK 
-*  This file contains the video display information format structure
-* 
-*******************************************************************/
 #ifndef _VDIF_H_
 #define _VDIF_H_
 

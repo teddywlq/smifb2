@@ -1,13 +1,4 @@
-/*******************************************************************
-*
-*         Copyright (c) 2014 by Silicon Motion, Inc. (SMI)
-*
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-*
-*  This file contains the definitions for the timer functions.
-*
-*******************************************************************/
+
 #ifndef _TIMER_H_
 #define _TIMER_H_
 

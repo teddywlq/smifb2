@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  MODE.H --- SMI DDK 
-*  This file contains the definitions for the mode tables.
-* 
-*******************************************************************/
 #ifndef _MODE_H_
 #define _MODE_H_
 

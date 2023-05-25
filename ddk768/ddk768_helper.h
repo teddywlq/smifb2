@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  helper.h --- SMI DDK 
-*  This file contains the helper functions those are used throughout
-*  the library
-* 
-*******************************************************************/
 #ifndef _DDK768_HELPER_H_
 #define _DDK768_HELPER_H_
 

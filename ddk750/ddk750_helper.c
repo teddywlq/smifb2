@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  helper.c --- SM750 DDK 
-*  This file contains helper functions those are used throughout
-*  the DDK library.
-* 
-*******************************************************************/
 #include "ddk750_helper.h"
 
 /* Perform a rounded division. 

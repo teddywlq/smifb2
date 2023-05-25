@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2008 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  hwi2c.H --- SMI DDK 
-*  This file contains the definitions for Hardware I2C.
-* 
-*******************************************************************/
 #ifndef _HWI2C_H_
 #define _HWI2C_H_
 

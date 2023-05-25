@@ -1,14 +1,4 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  Video.C --- Falcon SDK 
-*  This file contains the definitions for the Video functions.
-* 
-*******************************************************************/
+
 #include "ddk768_help.h"
 #include "ddk768_chip.h"
 #include "ddk768_mode.h"

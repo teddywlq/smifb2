@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  power.c --- Voyager GX SDK 
-*  This file contains the source code for the power functions.
-* 
-*******************************************************************/
 #include "ddk750_defs.h"
 #include "ddk750_chip.h"
 #include "ddk750_clock.h"

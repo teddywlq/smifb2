@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  RegDE.h --- Voyager GX SDK 
-*  This file contains the definitions for the Drawing Engine registers.
-* 
-*******************************************************************/
 /* 2D registers. */
 
 #define DE_SOURCE                                       0x100000

@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CURSOR.C --- Voyager GX SDK 
-*  This file contains the definitions for the Panel cursor functions.
-* 
-*******************************************************************/
 #include "ddk768.h"
 
 #include "ddk768_cursor.h"

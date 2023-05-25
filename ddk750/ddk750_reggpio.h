@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  RegGPIO.h --- Voyager GX SDK 
-*  This file contains the definitions for the GPIO registers.
-* 
-*******************************************************************/
 #define GPIO_DATA                                       0x010000
 #define GPIO_DATA_31                                    31:31
 #define GPIO_DATA_30                                    30:30

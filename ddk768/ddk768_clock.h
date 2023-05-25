@@ -1,13 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2016 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CLOCK.H --- Falcon DDK 
-* 
-*******************************************************************/
 #ifndef _DDK768_CLOCK_H_
 #define _DDK768_CLOCK_H_
 

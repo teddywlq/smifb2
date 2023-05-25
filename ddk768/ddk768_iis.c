@@ -1,15 +1,3 @@
-/*******************************************************************
-*
-*         Copyright (c) 2014 by Silicon Motion, Inc. (SMI)
-*
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-*
-*  This file contains the definitions for the IIS functions.
-*
-*******************************************************************/
-
-
 #include "ddk768_reg.h"
 #include "ddk768_iis.h"
 #include "ddk768_help.h"

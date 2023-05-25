@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  hwi2c.c --- SMI DDK 
-*  This file contains the source code for hardware i2c.
-* 
-*******************************************************************/
-
 #include "ddk750_defs.h"
 #include "ddk750_hardware.h"
 #include "ddk750_power.h"

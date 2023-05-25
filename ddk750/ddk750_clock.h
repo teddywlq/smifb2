@@ -1,13 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CLOCK.H --- Voyager GX DDK 
-* 
-*******************************************************************/
 #ifndef _CLOCK_H_
 #define _CLOCK_H_
 

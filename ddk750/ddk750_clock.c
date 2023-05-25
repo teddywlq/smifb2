@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CLOCK.C --- Voyager GX DDK 
-*  This file contains source code for the Voyager Family PLL's
-* 
-*******************************************************************/
 #include "ddk750_defs.h"
 //#include "ddk750_hardware.h"
 #include "ddk750_helper.h"

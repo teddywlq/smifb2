@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CHIP.C --- SMI DDK 
-*  This file contains the source code for the mode table.
-* 
-*******************************************************************/
 #include "ddk750_defs.h"
 #include "ddk750_regdc.h"
 #include "ddk750_helper.h"

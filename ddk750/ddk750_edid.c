@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  edid.c --- SM750/SM718 DDK 
-*  This file contains functions to interpret the EDID structure.
-* 
-*******************************************************************/
 //#include <linux/math.h>
 #include "ddk750_defs.h"
 #include "ddk750_hardware.h"

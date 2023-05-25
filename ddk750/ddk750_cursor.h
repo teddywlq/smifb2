@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  cursor.h --- SMI DDK 
-*  This file contains the definitions for the cursor functions.
-* 
-*******************************************************************/
 #ifndef _CURSOR_H_
 #define _CURSOR_H_
 

@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  Video.H --- SM768 DDK 
-*  This file contains the definitions for the Video functions.
-* 
-*******************************************************************/
-
 
 /****************************************************************************
    Structure and data type definition 

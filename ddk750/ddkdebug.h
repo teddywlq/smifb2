@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  ddkdebug.h --- DDK Debug module 
-*  This file contains the definitions for the SMI DDK debugging.
-* 
-*******************************************************************/
 #ifndef _DDKDEBUG_H_
 #define _DDKDEBUG_H_
 

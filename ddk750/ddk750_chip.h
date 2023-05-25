@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2008 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CHIP.H --- SMI DDK 
-*  This file contains the source code for the SM750/SM718 chip.
-* 
-*******************************************************************/
 #ifndef _CHIP_H_
 #define _CHIP_H_
 

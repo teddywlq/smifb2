@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2008 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  RegDC.h --- SMI DDK 
-*  This file contains the definitions for the Display Controller registers.
-* 
-*******************************************************************/
-
 /* Primary Graphics Control */
 
 #define PRIMARY_DISPLAY_CTRL                            0x080000

@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2016 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  CLOCK.C --- Falcon  DDK 
-*  This file contains source code for the Falcon  PLL's
-* 
-*******************************************************************/
 #include "ddk768_reg.h"
 
 #include "ddk768_chip.h"
