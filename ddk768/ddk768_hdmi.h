@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  HDMI.H --- SMI DDK 
-*  This file contains the source code for the HDMI controller chip
-* 
-*******************************************************************/
-
 #ifndef  _HDMI_HEADER_H_
 #define  _HDMI_HEADER_H_
 

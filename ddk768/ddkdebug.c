@@ -1,14 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  ddkdebug.c --- DDK Debug Tool 
-*  This file contains the source code for the SMI DDK Debugging.
-* 
-*******************************************************************/
 #ifdef DDKDEBUG /* Don't enable debug flag in ARM yet */
 #include <stdio.h>
 #include <stdarg.h>

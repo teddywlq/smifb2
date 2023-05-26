@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
+// Copyright (c) 2023, SiliconMotion Inc.
+
 #ifndef __SMI_DBG_H__
 #define __SMI_DBG_H__
 #include <linux/version.h>

@@ -1,11 +1,7 @@
-/*
- * Copyright 2016 SiliconMotion Inc.
- *
- * This file is subject to the terms and conditions of the GNU General
- * Public License version 2. See the file COPYING in the main
- * directory of this archive for more details.
- *
- */
+
+// SPDX-License-Identifier: GPL-2.0+
+// Copyright (c) 2023, SiliconMotion Inc.
+
 
 #include "smi_dbg.h"
 #include "smi_drv.h"

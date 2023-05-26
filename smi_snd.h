@@ -1,11 +1,5 @@
-/*
- * Copyright (C) 2016 SiliconMotion Inc.
- *
- *
- * This file is subject to the terms and conditions of the GNU General Public
- * License v2. See the file COPYING in the main directory of this archive for
- * more details.
- */
+// SPDX-License-Identifier: GPL-2.0+
+// Copyright (c) 2023, SiliconMotion Inc.
 
 #ifndef __SMI_SOUND_H__
 #define __SMI_SOUND_H__

@@ -1,17 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2007 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  Hdmi.c ---  
-*  This file contains the source code for HDMI functions.
-* 
-*******************************************************************/
-
-
-
 #include <linux/delay.h>
 #include <linux/timer.h>
 

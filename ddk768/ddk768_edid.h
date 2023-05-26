@@ -1,15 +1,3 @@
-/*******************************************************************
-* 
-*         Copyright (c) 2009 by Silicon Motion, Inc. (SMI)
-* 
-*  All rights are reserved. Reproduction or in part is prohibited
-*  without the written consent of the copyright owner.
-* 
-*  edid.h --- SMI DDK 
-*  This file contains the EDID structure and function API to
-*  interpret the EDID
-* 
-*******************************************************************/
 #ifndef _EDID_H_
 #define _EDID_H_
 
