@@ -412,13 +412,19 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 	return IRQ_NONE;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+
 static int smi_dumb_create_align(struct drm_file *file, struct drm_device *dev,
 			     struct drm_mode_create_dumb *args)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+	args->width = ALIGN (args->width , 8);	
+	return drm_gem_vram_fill_create_dumb(file, dev, &dev->vram_mm->bdev, 0, false, args);
+#else
 	return drm_gem_vram_fill_create_dumb(file, dev, 0, 16, args);
-}
 #endif
+
+}
+
 
 
 static const struct dev_pm_ops smi_pm_ops = {
@@ -462,7 +468,7 @@ static const struct file_operations smi_driver_fops = {
 
 static struct drm_driver driver = {
 	.driver_features = DRIVER_HAVE_IRQ | DRIVER_GEM | DRIVER_MODESET | DRIVER_ATOMIC
-#if defined(PRIME) && LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
 			   | DRIVER_PRIME
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)
@@ -480,8 +486,10 @@ static struct drm_driver driver = {
 	.major = DRIVER_MAJOR,
 	.minor = DRIVER_MINOR,
 	.patchlevel = DRIVER_PATCHLEVEL,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 	.debugfs_init             = drm_vram_mm_debugfs_init,
+#endif
 	.dumb_create		  = smi_dumb_create_align,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	.dumb_map_offset		  = drm_gem_ttm_dumb_map_offset,
@@ -489,8 +497,6 @@ static struct drm_driver driver = {
 	.dumb_map_offset		  = drm_gem_vram_driver_dumb_mmap_offset,
 #endif
 	.gem_prime_mmap		  = drm_gem_prime_mmap,
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
-	 DRM_GEM_VRAM_DRIVER,
 #else
 	.gem_free_object_unlocked = smi_gem_free_object,
 	.dumb_create = smi_dumb_create,
