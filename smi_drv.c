@@ -412,7 +412,7 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 	return IRQ_NONE;
 }
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 static int smi_dumb_create_align(struct drm_file *file, struct drm_device *dev,
 			     struct drm_mode_create_dumb *args)
 {
@@ -424,7 +424,7 @@ static int smi_dumb_create_align(struct drm_file *file, struct drm_device *dev,
 #endif
 
 }
-
+#endif
 
 
 static const struct dev_pm_ops smi_pm_ops = {
