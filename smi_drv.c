@@ -5,6 +5,12 @@
 #include <linux/console.h>
 #include <linux/module.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+#include <drm/drm_fbdev_generic.h>
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+#include <drm/drm_modeset_helper.h>
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
 #include <drm/drmP.h>
 #else
