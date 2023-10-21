@@ -151,7 +151,7 @@ unsigned long ddk768_pwmRawIntPending(
     */
     pwmAddr = PWM_CONTROL + (pwm << 2);
 
-    rawIntStatus = FIELD_GET(peekRegisterDWord(pwmAddr), PWM_CONTROL, INTERRUPT_STATUS);
+    rawIntStatus = smifb2_field_get(peekRegisterDWord(pwmAddr), PWM_CONTROL, INTERRUPT_STATUS);
 
     return(rawIntStatus);
 }
@@ -260,7 +260,7 @@ void ddk768_pwmIsrTemplate(unsigned long status)
 {
     /* Check if it's PWM interrupt. */
 
-    if (FIELD_GET(status, INT_STATUS, PWM))
+    if (smifb2_field_get(status, INT_STATUS, PWM))
     {
         /* Perform ISR action for timer 0 here */
         incTestCounter();    /* Dummy example action */

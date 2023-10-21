@@ -263,14 +263,14 @@ int hw750_check_vsync_interrupt(int path)
 	
 	if(path == PRIMARY_CTRL)
 	{
-	    if ((FIELD_GET(value1, RAW_INT, PRIMARY_VSYNC) == RAW_INT_PRIMARY_VSYNC_ACTIVE)
-			&&(FIELD_GET(value2, INT_MASK, PRIMARY_VSYNC) == INT_MASK_PRIMARY_VSYNC_ENABLE))
+	    if ((smifb2_field_get(value1, RAW_INT, PRIMARY_VSYNC) == RAW_INT_PRIMARY_VSYNC_ACTIVE)
+			&&(smifb2_field_get(value2, INT_MASK, PRIMARY_VSYNC) == INT_MASK_PRIMARY_VSYNC_ENABLE))
 	    {
 			return true;
 		}
 	}else{
-		if ((FIELD_GET(value1, RAW_INT, SECONDARY_VSYNC) == RAW_INT_SECONDARY_VSYNC_ACTIVE)
-			&&(FIELD_GET(value2, INT_MASK, SECONDARY_VSYNC) == INT_MASK_SECONDARY_VSYNC_ENABLE))
+		if ((smifb2_field_get(value1, RAW_INT, SECONDARY_VSYNC) == RAW_INT_SECONDARY_VSYNC_ACTIVE)
+			&&(smifb2_field_get(value2, INT_MASK, SECONDARY_VSYNC) == INT_MASK_SECONDARY_VSYNC_ENABLE))
 		{
 			return true;
 		}

@@ -78,7 +78,7 @@ unsigned long timerRawIntPending(
        Timer 0 address + ( timer number x 4 )
     */
     ulTimerAddr = TIMER_CONTROL + (timer << 2);
-    rawIntStatus = FIELD_GET(peekRegisterDWord(ulTimerAddr), TIMER_CONTROL, RAWINT_STATUS);
+    rawIntStatus = smifb2_field_get(peekRegisterDWord(ulTimerAddr), TIMER_CONTROL, RAWINT_STATUS);
 
     return(rawIntStatus);
 }
@@ -148,7 +148,7 @@ unsigned long timerGetCounter(
        Timer 0 address + ( timer number x 4 )
     */
     ulTimerAddr = TIMER_CONTROL + (timer << 2);
-    ulCounter = FIELD_GET(peekRegisterDWord(ulTimerAddr), TIMER_CONTROL, COUNTER);
+    ulCounter = smifb2_field_get(peekRegisterDWord(ulTimerAddr), TIMER_CONTROL, COUNTER);
 
     return(ulCounter);
 }
@@ -259,7 +259,7 @@ unsigned long timerIntMask(
  */
 void timerIsrTemplate(unsigned long status)
 {
-    if (FIELD_GET(status, INT_STATUS, TIMER0) == INT_STATUS_TIMER0_ACTIVE)
+    if (smifb2_field_get(status, INT_STATUS, TIMER0) == INT_STATUS_TIMER0_ACTIVE)
     {
         /* Perform ISR action for timer 0 here */
         incTestCounter();
@@ -267,7 +267,7 @@ void timerIsrTemplate(unsigned long status)
         timerClearRawInt(0);
     }            
 
-    if (FIELD_GET(status, INT_STATUS, TIMER1) == INT_STATUS_TIMER1_ACTIVE)
+    if (smifb2_field_get(status, INT_STATUS, TIMER1) == INT_STATUS_TIMER1_ACTIVE)
     {
         /* Perform ISR action for timer 1 here */
         incTestCounter();
@@ -275,7 +275,7 @@ void timerIsrTemplate(unsigned long status)
         timerClearRawInt(1);
     }            
 
-    if (FIELD_GET(status, INT_STATUS, TIMER2) == INT_STATUS_TIMER2_ACTIVE)
+    if (smifb2_field_get(status, INT_STATUS, TIMER2) == INT_STATUS_TIMER2_ACTIVE)
     {
         /* Perform ISR action for timer 2 here */
         incTestCounter();
@@ -283,7 +283,7 @@ void timerIsrTemplate(unsigned long status)
         timerClearRawInt(2);
     }            
 
-    if (FIELD_GET(status, INT_STATUS, TIMER3) == INT_STATUS_TIMER3_ACTIVE)
+    if (smifb2_field_get(status, INT_STATUS, TIMER3) == INT_STATUS_TIMER3_ACTIVE)
     {
         /* Perform ISR action for timer 3 here */
         incTestCounter();

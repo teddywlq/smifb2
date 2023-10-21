@@ -42,7 +42,7 @@ unsigned long ddk750_getFrameBufSize(void)
 {
     unsigned long sizeSymbol, memSize;
 
-	sizeSymbol = FIELD_GET(peekRegisterDWord(MISC_CTRL), MISC_CTRL, LOCALMEM_SIZE);
+	sizeSymbol = smifb2_field_get(peekRegisterDWord(MISC_CTRL), MISC_CTRL, LOCALMEM_SIZE);
 	switch(sizeSymbol)
 	{
     	case MISC_CTRL_LOCALMEM_SIZE_8M:  memSize = MB(8);  break; /* 8  Mega byte */

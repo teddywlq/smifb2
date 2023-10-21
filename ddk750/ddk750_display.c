@@ -27,7 +27,7 @@ unsigned char isDualPanelEnable(void)
 {
     unsigned long value;
 
-    value = FIELD_GET(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, DUAL_DISPLAY);
+    value = smifb2_field_get(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, DUAL_DISPLAY);
     
     return ((value == PRIMARY_DISPLAY_CTRL_DUAL_DISPLAY_ENABLE) ? 1 : 0);
 }
@@ -40,7 +40,7 @@ unsigned char isDualPanelEnable(void)
  */
 panel_type_t getPanelType(void)
 {
-    if (FIELD_GET(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, DOUBLE_PIXEL) == 
+    if (smifb2_field_get(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, DOUBLE_PIXEL) == 
         PRIMARY_DISPLAY_CTRL_DOUBLE_PIXEL_ENABLE)
     {
         return TFT_36BIT;
@@ -109,9 +109,9 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
     {
         /* Do not wait when the Primary PLL is off or display control is already off. 
            This will prevent the software to wait forever. */
-        if ((FIELD_GET(peekRegisterDWord(PRIMARY_PLL_CTRL), PRIMARY_PLL_CTRL, POWER) ==
+        if ((smifb2_field_get(peekRegisterDWord(PRIMARY_PLL_CTRL), PRIMARY_PLL_CTRL, POWER) ==
              PRIMARY_PLL_CTRL_POWER_OFF) ||
-            (FIELD_GET(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, TIMING) ==
+            (smifb2_field_get(peekRegisterDWord(PRIMARY_DISPLAY_CTRL), PRIMARY_DISPLAY_CTRL, TIMING) ==
              PRIMARY_DISPLAY_CTRL_TIMING_DISABLE))
         {
             return;
@@ -123,7 +123,7 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
             /* Wait for end of vsync. */
             do
             {
-                status = FIELD_GET(peekRegisterDWord(SYSTEM_CTRL),
+                status = smifb2_field_get(peekRegisterDWord(SYSTEM_CTRL),
                                    SYSTEM_CTRL,
                                    PRIMARY_VSYNC);
                 if(ulLoopCount++ > ulDeadLoopCount)
@@ -135,7 +135,7 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
             /* Wait for start of vsync. */
             do
             {
-                status = FIELD_GET(peekRegisterDWord(SYSTEM_CTRL),
+                status = smifb2_field_get(peekRegisterDWord(SYSTEM_CTRL),
                                    SYSTEM_CTRL, 
                                    PRIMARY_VSYNC);
                 if(ulLoopCount++ > ulDeadLoopCount)
@@ -148,9 +148,9 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
     {
         /* Do not wait when the display control is already off. This will prevent
            the software to wait forever. */
-        if ((FIELD_GET(peekRegisterDWord(SECONDARY_PLL_CTRL), SECONDARY_PLL_CTRL, POWER) ==
+        if ((smifb2_field_get(peekRegisterDWord(SECONDARY_PLL_CTRL), SECONDARY_PLL_CTRL, POWER) ==
              SECONDARY_PLL_CTRL_POWER_OFF) ||
-            (FIELD_GET(peekRegisterDWord(SECONDARY_DISPLAY_CTRL), SECONDARY_DISPLAY_CTRL, TIMING) ==
+            (smifb2_field_get(peekRegisterDWord(SECONDARY_DISPLAY_CTRL), SECONDARY_DISPLAY_CTRL, TIMING) ==
              SECONDARY_DISPLAY_CTRL_TIMING_DISABLE))
         {
             return;
@@ -162,7 +162,7 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
             /* Wait for end of vsync. */
             do
             {
-                status = FIELD_GET(peekRegisterDWord(SYSTEM_CTRL),
+                status = smifb2_field_get(peekRegisterDWord(SYSTEM_CTRL),
                                    SYSTEM_CTRL,
                                    SECONDARY_VSYNC);
                 if(ulLoopCount++ > ulDeadLoopCount)
@@ -174,7 +174,7 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
             /* Wait for start of vsync. */
             do
             {
-                status = FIELD_GET(peekRegisterDWord(SYSTEM_CTRL),
+                status = smifb2_field_get(peekRegisterDWord(SYSTEM_CTRL),
                                    SYSTEM_CTRL, 
                                    SECONDARY_VSYNC);
                 if(ulLoopCount++ > ulDeadLoopCount)
@@ -222,9 +222,9 @@ void waitVSyncLine(disp_control_t dispControl)
     do
     {
         if (dispControl == PRIMARY_CTRL)
-            value = FIELD_GET(peekRegisterDWord(PRIMARY_CURRENT_LINE), PRIMARY_CURRENT_LINE, LINE);
+            value = smifb2_field_get(peekRegisterDWord(PRIMARY_CURRENT_LINE), PRIMARY_CURRENT_LINE, LINE);
         else
-            value = FIELD_GET(peekRegisterDWord(SECONDARY_CURRENT_LINE), SECONDARY_CURRENT_LINE, LINE);
+            value = smifb2_field_get(peekRegisterDWord(SECONDARY_CURRENT_LINE), SECONDARY_CURRENT_LINE, LINE);
     }
     while (value < modeParam.vertical_sync_start);
 }
@@ -612,13 +612,13 @@ void getCRTDetectThreshold(
     value = peekRegisterDWord(SECONDARY_MONITOR_DETECT);
 
     if (pRedValue != (unsigned char *)0)
-        *pRedValue = (unsigned char)FIELD_GET(value, SECONDARY_MONITOR_DETECT, RED);
+        *pRedValue = (unsigned char)smifb2_field_get(value, SECONDARY_MONITOR_DETECT, RED);
         
     if (pGreenValue != (unsigned char *)0)
-        *pGreenValue = (unsigned char)FIELD_GET(value, SECONDARY_MONITOR_DETECT, GREEN);
+        *pGreenValue = (unsigned char)smifb2_field_get(value, SECONDARY_MONITOR_DETECT, GREEN);
         
     if (pBlueValue != (unsigned char *)0)
-        *pBlueValue = (unsigned char)FIELD_GET(value, SECONDARY_MONITOR_DETECT, BLUE);
+        *pBlueValue = (unsigned char)smifb2_field_get(value, SECONDARY_MONITOR_DETECT, BLUE);
 }
 
 /*
@@ -671,7 +671,7 @@ long ddk750_detectCRTMonitor(
     while (value--);
     
     /* Check if the monitor is detected. */
-    if (FIELD_GET(peekRegisterDWord(SECONDARY_MONITOR_DETECT), SECONDARY_MONITOR_DETECT, VALUE) ==
+    if (smifb2_field_get(peekRegisterDWord(SECONDARY_MONITOR_DETECT), SECONDARY_MONITOR_DETECT, VALUE) ==
         SECONDARY_MONITOR_DETECT_VALUE_ENABLE)
     {
         result = 0;
@@ -1675,14 +1675,14 @@ unsigned char isScalingEnabled(
     if (dispCtrl == PRIMARY_CTRL)
     {
         value = peekRegisterDWord(SECONDARY_DISPLAY_CTRL);
-        if (FIELD_GET(value, SECONDARY_DISPLAY_CTRL, EXPANSION) == SECONDARY_DISPLAY_CTRL_EXPANSION_ENABLE)
+        if (smifb2_field_get(value, SECONDARY_DISPLAY_CTRL, EXPANSION) == SECONDARY_DISPLAY_CTRL_EXPANSION_ENABLE)
             return 1;
     }
     else
     {
         value = peekRegisterDWord(SECONDARY_SCALE);
-        if ((FIELD_GET(value, SECONDARY_SCALE, VERTICAL_SCALE) != 0) ||
-            (FIELD_GET(value, SECONDARY_SCALE, HORIZONTAL_SCALE) != 0))
+        if ((smifb2_field_get(value, SECONDARY_SCALE, VERTICAL_SCALE) != 0) ||
+            (smifb2_field_get(value, SECONDARY_SCALE, HORIZONTAL_SCALE) != 0))
             return 1;
     }
     

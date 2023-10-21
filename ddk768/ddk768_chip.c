@@ -16,7 +16,7 @@ unsigned int ddk768_getCrystalType(void)
 	unsigned int strapPin;
 		
     /* If bit 12 of strap pin is 1, the crystal must be 24.576M */
-	strapPin = FIELD_GET(peekRegisterDWord(STRAP_PINS), STRAP_PINS, CRYSTAL_CONFIG);
+	strapPin = smifb2_field_get(peekRegisterDWord(STRAP_PINS), STRAP_PINS, CRYSTAL_CONFIG);
     
     if(strapPin == STRAP_PINS_CRYSTAL_CONFIG_24576){
 		printk("Use 24.576MHZ Crystal\n");
@@ -32,7 +32,7 @@ unsigned int ddk768_getPixelType(void)
 	unsigned int strapPin;
 		
     /* If bit 10 of strap pin is 1, the pixel clock will be half */
-	strapPin = FIELD_GET(peekRegisterDWord(STRAP_PINS), STRAP_PINS, PIXEL_CONFIG);
+	strapPin = smifb2_field_get(peekRegisterDWord(STRAP_PINS), STRAP_PINS, PIXEL_CONFIG);
     
     if(strapPin == STRAP_PINS_PIXEL_CONFIG_HALF){
 		return 1;
@@ -53,7 +53,7 @@ unsigned long ddk768_getFrameBufSize()
 #else
     unsigned long strapPin, ddrController, rValue;
 
-    strapPin = FIELD_GET(peekRegisterDWord(STRAP_PINS), STRAP_PINS, MEM_SIZE);
+    strapPin = smifb2_field_get(peekRegisterDWord(STRAP_PINS), STRAP_PINS, MEM_SIZE);
     ddrController = peekRegisterDWord(DDR_CONTROL);
 
     switch(strapPin)

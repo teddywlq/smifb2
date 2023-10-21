@@ -2764,7 +2764,7 @@
 #define _F_DENORMALIZE(v, f)    (((v) << _F_START(f)) & _F_MASK(f))
 
 /* Global macros */
-#define FIELD_GET(x, reg, field) \
+#define smifb2_field_get(x, reg, field) \
 ( \
     _F_NORMALIZE((x), reg ## _ ## field) \
 )

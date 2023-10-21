@@ -807,7 +807,7 @@ long isDisplayBasePending(
 
     regFB = (dispControl == CHANNEL0_CTRL) ? FB_ADDRESS : (FB_ADDRESS+CHANNEL_OFFSET);
 
-    if (FIELD_GET(peekRegisterDWord(regFB), FB_ADDRESS, STATUS) == FB_ADDRESS_STATUS_PENDING)
+    if (smifb2_field_get(peekRegisterDWord(regFB), FB_ADDRESS, STATUS) == FB_ADDRESS_STATUS_PENDING)
         return 1;
 
     return (0);
@@ -891,7 +891,7 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
 
 
     
-    hdmi_channel = FIELD_GET(peekRegisterDWord(DISPLAY_CTRL+offset),
+    hdmi_channel = smifb2_field_get(peekRegisterDWord(DISPLAY_CTRL+offset),
                                    DISPLAY_CTRL,
                                    HDMI_SELECT);    
 
