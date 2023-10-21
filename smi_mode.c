@@ -1174,7 +1174,7 @@ int smi_modeset_init(struct smi_device *cdev)
 #endif
 	cdev->dev->mode_config.preferred_depth = smi_bpp;
 	cdev->dev->mode_config.prefer_shadow = 1;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
+#if  LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 4, 0)
 	cdev->dev->mode_config.prefer_shadow_fbdev = 1;
 #endif
 
