@@ -199,12 +199,7 @@ int smi_mm_init(struct smi_device *smi)
 	struct pci_dev *pdev;
 	struct drm_vram_mm *vmm __attribute__((unused));
 	struct drm_device *dev = smi->dev;
-	unsigned long vram_size = smi->mc.vram_size;
-
-#ifdef PRIME
-	if (g_specId == SPC_SM750)
-		vram_size = 0xa000000;
-#endif
+	unsigned long vram_size = smi->vram_size;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	pdev = to_pci_dev(dev->dev);

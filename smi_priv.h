@@ -16,9 +16,4 @@ struct smi_crtc {
 	int CursorOffset;
 };
 
-struct smi_mc {
-	resource_size_t vram_size;
-	resource_size_t vram_base;
-};
-
 #endif

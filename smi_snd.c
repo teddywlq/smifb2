@@ -640,7 +640,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 	
 
 	//map video memory. 
-	chip->vidmem_start = smi_device->mc.vram_base;
+	chip->vidmem_start = smi_device->vram_base;
 	chip->vidmem_size = 0x200000;   // change the video memory temperarily
 	dbg_msg("video memory phyAddr = 0x%lx, size = (Dec)%ld bytes\n",
 		chip->vidmem_start,chip->vidmem_size);

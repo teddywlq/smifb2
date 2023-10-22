@@ -102,9 +102,11 @@ struct smi_device {
 
 	resource_size_t rmmio_base;
 	resource_size_t rmmio_size;
+	resource_size_t vram_size;
+	resource_size_t vram_base;
 	void __iomem *rmmio;
 
-	struct smi_mc mc;
+
 	struct smi_mode_info mode_info;
 
 	int num_crtc;

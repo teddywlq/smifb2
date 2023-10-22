@@ -1170,7 +1170,7 @@ int smi_modeset_init(struct smi_device *cdev)
 	cdev->dev->mode_config.cursor_width = 64;
 	cdev->dev->mode_config.cursor_height = 64;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
-	cdev->dev->mode_config.fb_base = cdev->mc.vram_base;
+	cdev->dev->mode_config.fb_base = cdev->vram_base;
 #endif
 	cdev->dev->mode_config.preferred_depth = smi_bpp;
 	cdev->dev->mode_config.prefer_shadow = 1;

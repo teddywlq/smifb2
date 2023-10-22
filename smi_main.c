@@ -578,17 +578,17 @@ static int smi_vram_init(struct smi_device *cdev)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	struct pci_dev *pdev = to_pci_dev(cdev->dev->dev);
 	/* BAR 0 is VRAM */
-	cdev->mc.vram_base = pci_resource_start(pdev, 0);
+	cdev->vram_base = pci_resource_start(pdev, 0);
 #else	
 	/* BAR 0 is VRAM */
-	cdev->mc.vram_base = pci_resource_start(cdev->dev->pdev, 0);
+	cdev->vram_base = pci_resource_start(cdev->dev->pdev, 0);
 #endif
 
 	/* VRAM Size */
 	if (g_specId == SPC_SM750)
-		cdev->mc.vram_size = ddk750_getFrameBufSize();
+		cdev->vram_size = ddk750_getFrameBufSize();
 	else
-		cdev->mc.vram_size = ddk768_getFrameBufSize();
+		cdev->vram_size = ddk768_getFrameBufSize();
 
 	return 0;
 }
