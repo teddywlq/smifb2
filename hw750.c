@@ -17,7 +17,8 @@
 #ifdef USE_HDMICHIP
 #include "ddk750/ddk750_sii9022.h"
 #endif
-#include <linux/version.h>
+
+#include "smi_ver.h"
 
 
 struct smi_750_register{

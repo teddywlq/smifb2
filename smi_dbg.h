@@ -3,7 +3,8 @@
 
 #ifndef __SMI_DBG_H__
 #define __SMI_DBG_H__
-#include <linux/version.h>
+
+#include "smi_ver.h"
 
 #include <drm/drm_print.h>
 

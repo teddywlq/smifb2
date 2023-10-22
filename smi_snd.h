@@ -4,6 +4,7 @@
 #ifndef __SMI_SOUND_H__
 #define __SMI_SOUND_H__
 
+#include "smi_dbg.h"
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/ioport.h>

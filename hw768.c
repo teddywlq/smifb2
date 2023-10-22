@@ -17,7 +17,8 @@
 #include "ddk768/ddk768_swi2c.h"
 #include "ddk768/ddk768_hwi2c.h"
 
-#include <linux/version.h>
+
+#include "smi_ver.h"
 
 
 extern int lcd_scale;

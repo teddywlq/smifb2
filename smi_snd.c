@@ -33,7 +33,6 @@
 
 #include "hw768.h"
 
-#include "smi_dbg.h"
 
 struct sm768chip *chip_irq_id=NULL;/*chip_irq_id is use for request and free irq*/
 int use_wm8978 = 0;
