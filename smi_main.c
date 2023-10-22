@@ -259,23 +259,37 @@ static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_fil
 				      unsigned flags, unsigned color, struct drm_clip_rect *clips,
 				      unsigned num_clips)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	int ret;
+#else
 	struct drm_gem_object *obj = fb->obj[0];
+#endif
 	struct drm_clip_rect clip;
 
 	drm_modeset_lock_all(fb->dev);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	ret = drm_gem_fb_begin_cpu_access(fb, DMA_FROM_DEVICE);
+	if (ret)
+		goto unlock;
+#else
 	if (obj->import_attach) {
 		int ret = dma_buf_begin_cpu_access(obj->import_attach->dmabuf, DMA_FROM_DEVICE);
 		if (ret)
 			goto unlock;
 	}
+#endif
 
 	smi_merge_clips(&clip, clips, num_clips, flags, fb->width, fb->height);
 	smi_handle_damage(fb, clip);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	drm_gem_fb_end_cpu_access(fb, DMA_FROM_DEVICE);
+#else
 	if (obj->import_attach) {
 		dma_buf_end_cpu_access(obj->import_attach->dmabuf, DMA_FROM_DEVICE);
 	}
+#endif
 
 unlock:
 	drm_modeset_unlock_all(fb->dev);
