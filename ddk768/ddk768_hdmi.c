@@ -120,7 +120,7 @@ void hdmiISR(
 {
     hdmi_interrupt_t *pfnHandler;
 
-    if (FIELD_GET(status, INT_STATUS, HDMI) == INT_STATUS_HDMI_ACTIVE)
+    if (FIELD_VAL_GET(status, INT_STATUS, HDMI) == INT_STATUS_HDMI_ACTIVE)
     {
         /* Walk all registered handlers for handlers that support this interrupt status */
         for (pfnHandler = g_pHdmiIntHandlers; pfnHandler != ((hdmi_interrupt_t *)0); pfnHandler = pfnHandler->next)
@@ -1504,7 +1504,7 @@ int hdmi_detect(void)
 
     intStatus = peekRegisterDWord(INT_STATUS);
 	
-    if (FIELD_GET(intStatus, INT_STATUS, HDMI) == INT_STATUS_HDMI_ACTIVE)
+    if (FIELD_VAL_GET(intStatus, INT_STATUS, HDMI) == INT_STATUS_HDMI_ACTIVE)
     {
         
 

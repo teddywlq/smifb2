@@ -573,12 +573,12 @@ long isCurrentDisplayPending(
     /* Get the display status */
     if (dispControl == PRIMARY_CTRL)
     {
-        if (FIELD_GET(peekRegisterDWord(PRIMARY_FB_ADDRESS), PRIMARY_FB_ADDRESS, STATUS) == PRIMARY_FB_ADDRESS_STATUS_PENDING)
+        if (FIELD_VAL_GET(peekRegisterDWord(PRIMARY_FB_ADDRESS), PRIMARY_FB_ADDRESS, STATUS) == PRIMARY_FB_ADDRESS_STATUS_PENDING)
             return 0;
     }
 	else if (dispControl == SECONDARY_CTRL)
     {
-        if (FIELD_GET(peekRegisterDWord(SECONDARY_FB_ADDRESS), SECONDARY_FB_ADDRESS, STATUS) == SECONDARY_FB_ADDRESS_STATUS_PENDING)
+        if (FIELD_VAL_GET(peekRegisterDWord(SECONDARY_FB_ADDRESS), SECONDARY_FB_ADDRESS, STATUS) == SECONDARY_FB_ADDRESS_STATUS_PENDING)
             return 0;
     }
 

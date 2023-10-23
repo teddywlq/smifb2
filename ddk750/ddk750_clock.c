@@ -202,10 +202,10 @@ unsigned long getPllValue(clock_type_t clockType, pll_value_t *pPLL)
             break;
     }
     
-    pPLL->M = FIELD_GET(ulPllReg, PRIMARY_PLL_CTRL, M);
-    pPLL->N = FIELD_GET(ulPllReg, PRIMARY_PLL_CTRL, N);
-    pPLL->OD = FIELD_GET(ulPllReg, PRIMARY_PLL_CTRL, OD);
-    pPLL->POD = FIELD_GET(ulPllReg, PRIMARY_PLL_CTRL, POD);    
+    pPLL->M = FIELD_VAL_GET(ulPllReg, PRIMARY_PLL_CTRL, M);
+    pPLL->N = FIELD_VAL_GET(ulPllReg, PRIMARY_PLL_CTRL, N);
+    pPLL->OD = FIELD_VAL_GET(ulPllReg, PRIMARY_PLL_CTRL, OD);
+    pPLL->POD = FIELD_VAL_GET(ulPllReg, PRIMARY_PLL_CTRL, POD);    
 
     return calcPLL(pPLL);
 }
@@ -416,7 +416,7 @@ unsigned long getMasterClock()
     
     /* Get the divisor */
     value = peekRegisterDWord(CURRENT_GATE);
-    switch (FIELD_GET(value, CURRENT_GATE, MCLK))
+    switch (FIELD_VAL_GET(value, CURRENT_GATE, MCLK))
     {
         case CURRENT_GATE_MCLK_DIV_3:
             divisor = 3;
@@ -454,7 +454,7 @@ unsigned long getMemoryClock()
     
     /* Get the divisor */
     value = peekRegisterDWord(CURRENT_GATE);
-    switch (FIELD_GET(value, CURRENT_GATE, M2XCLK))
+    switch (FIELD_VAL_GET(value, CURRENT_GATE, M2XCLK))
     {
         case CURRENT_GATE_M2XCLK_DIV_1:
             divisor = 1;
@@ -531,7 +531,7 @@ void waitMasterClock(
     while (totalClockCount > 0)
     {
         startCount = endCount;
-        value = FIELD_GET(peekRegisterDWord(PLL_CLK_COUNT), PLL_CLK_COUNT, COUNTER);
+        value = FIELD_VAL_GET(peekRegisterDWord(PLL_CLK_COUNT), PLL_CLK_COUNT, COUNTER);
         endCount = value;
         
         /* Check if the counter has overflown */

@@ -289,7 +289,7 @@ int hw768_check_iis_interrupt(void)
 	value = peekRegisterDWord(INT_STATUS);
 
 	
-    if (FIELD_GET(value, INT_STATUS, I2S) == INT_STATUS_I2S_ACTIVE)
+    if (FIELD_VAL_GET(value, INT_STATUS, I2S) == INT_STATUS_I2S_ACTIVE)
 		return true;
 	else	
 		return false;
@@ -306,14 +306,14 @@ int hw768_check_vsync_interrupt(int path)
 
 	if(path == CHANNEL0_CTRL)
 	{
-	    if ((FIELD_GET(value1, RAW_INT, CHANNEL0_VSYNC) == RAW_INT_CHANNEL0_VSYNC_ACTIVE)
-			&&(FIELD_GET(value2, INT_MASK, CHANNEL0_VSYNC) == INT_MASK_CHANNEL0_VSYNC_ENABLE))
+	    if ((FIELD_VAL_GET(value1, RAW_INT, CHANNEL0_VSYNC) == RAW_INT_CHANNEL0_VSYNC_ACTIVE)
+			&&(FIELD_VAL_GET(value2, INT_MASK, CHANNEL0_VSYNC) == INT_MASK_CHANNEL0_VSYNC_ENABLE))
 	    {
 			return true;
 		}
 	}else{
-		if ((FIELD_GET(value1, RAW_INT, CHANNEL1_VSYNC) == RAW_INT_CHANNEL1_VSYNC_ACTIVE)
-			&&(FIELD_GET(value2, INT_MASK, CHANNEL1_VSYNC) == INT_MASK_CHANNEL1_VSYNC_ENABLE))
+		if ((FIELD_VAL_GET(value1, RAW_INT, CHANNEL1_VSYNC) == RAW_INT_CHANNEL1_VSYNC_ACTIVE)
+			&&(FIELD_VAL_GET(value2, INT_MASK, CHANNEL1_VSYNC) == INT_MASK_CHANNEL1_VSYNC_ENABLE))
 		{
 			return true;
 		}
