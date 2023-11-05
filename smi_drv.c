@@ -502,7 +502,9 @@ static struct drm_driver driver = {
 #else
 	.dumb_map_offset		  = drm_gem_vram_driver_dumb_mmap_offset,
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
 	.gem_prime_mmap		  = drm_gem_prime_mmap,
+#endif
 #else
 	.gem_free_object_unlocked = smi_gem_free_object,
 	.dumb_create = smi_dumb_create,
@@ -519,8 +521,10 @@ static struct drm_driver driver = {
 	.irq_uninstall = smi_irq_uninstall,
 	.irq_handler = smi_drm_interrupt,
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
 	.gem_prime_import = drm_gem_prime_import,
