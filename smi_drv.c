@@ -41,13 +41,12 @@
 #include "hw750.h"
 #include "hw768.h"
 
-#include "smi_sysfs.h"
+#include "smi_debugfs.h"
 
 int smi_modeset = -1;
 int smi_indent = 0;
 int smi_bpp = 32;
 int force_connect = 0;
-int g_specId = 0;
 int smi_pat = 0xff;
 int lvds_channel = 0;
 int usb_host = 0;
@@ -129,6 +128,7 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	struct drm_device *dev;
+	struct smi_device *sdev;
 #endif
 	int ret __attribute__((unused)) = 0;
 
@@ -157,7 +157,6 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		}
 	}
 
-	smi_sysfs_init(&THIS_MODULE->mkobj.kobj);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	ret = pci_enable_device(pdev);
@@ -185,7 +184,12 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto err_smi_driver_unload;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-	if ((g_specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || g_specId == SPC_SM768)
+	sdev = dev->dev_private;
+#if defined(__arm__) || defined(__aarch64__)
+    if (sdev->specId == SPC_SM750 || sdev->specId == SPC_SM768)
+#else
+	if ((sdev->specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || sdev->specId == SPC_SM768)
+#endif
 		drm_fbdev_generic_setup(dev, dev->mode_config.preferred_depth);
 #endif
 
@@ -208,7 +212,7 @@ static void smi_pci_remove(struct pci_dev *pdev)
 {
 	struct drm_device *dev = pci_get_drvdata(pdev);
 
-	smi_sysfs_deinit(&THIS_MODULE->mkobj.kobj);
+
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	drm_dev_unregister(dev);
@@ -219,19 +223,50 @@ static void smi_pci_remove(struct pci_dev *pdev)
 #endif
 }
 
+
+
+static int smi_vram_suspend(struct smi_device *sdev,int vram_size)
+{
+
+	sdev->vram_save = vmalloc(vram_size << 20);
+	if (!sdev->vram_save)			
+		goto malloc_failed;
+	
+	memcpy_fromio(sdev->vram_save, sdev->vram, vram_size << 20);
+
+	return 0;
+	
+malloc_failed:
+	if (sdev->vram_save) {			
+		vfree(sdev->vram_save); 		
+		sdev->vram_save = NULL; 	
+	}	
+	return -ENOMEM;
+}
+
+static void smi_vram_resume(struct smi_device *sdev,int vram_size)
+{
+
+	memcpy_toio(sdev->vram, sdev->vram_save, vram_size << 20);
+	vfree(sdev->vram_save); 		
+	sdev->vram_save = NULL; 	
+}
+
+
 static int smi_drm_freeze(struct drm_device *dev)
 {
 	int ret;
 	struct smi_device *sdev = dev->dev_private;
 	ENTER();
 	
-	if (g_specId == SPC_SM750)
+	if (sdev->specId == SPC_SM750){
+		smi_vram_suspend(sdev,16);
 		hw750_suspend(sdev->regsave);
-    else if(g_specId == SPC_SM768){
-		 if(audio_en)
+	}else if(sdev->specId == SPC_SM768){
+		if(audio_en)
 			 smi_audio_suspend();
+		smi_vram_suspend(sdev,32);
 		hw768_suspend(sdev->regsave_768);
-
     }
 	ret = drm_mode_config_helper_suspend(dev);
 	if (ret)
@@ -253,10 +288,13 @@ static int smi_drm_thaw(struct drm_device *dev)
 	ENTER();
 	
 	
-	if(g_specId == SPC_SM750)
-			hw750_resume(sdev->regsave);
-	else if(g_specId == SPC_SM768){
-			hw768_resume(sdev->regsave_768);
+	
+	if(sdev->specId == SPC_SM750){
+		smi_vram_resume(sdev,16);
+		hw750_resume(sdev->regsave);
+	}else if(sdev->specId == SPC_SM768){
+		smi_vram_resume(sdev,32);
+		hw768_resume(sdev->regsave_768);
 		if(audio_en)
 			smi_audio_resume();
 		if (lvds_channel == 1)
@@ -275,14 +313,12 @@ static int smi_drm_thaw(struct drm_device *dev)
 
 static int smi_drm_resume(struct drm_device *dev)
 {
-	struct smi_device *UNUSED(sdev) = dev->dev_private;
 	int ret;
+	struct pci_dev *pdev = to_pci_dev(dev->dev);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
-	if (pci_enable_device(to_pci_dev(dev->dev)))
-#else
-    if (pci_enable_device(dev->pdev))
-#endif	
+	pci_set_power_state(pdev, PCI_D0);
+	pci_restore_state(pdev);
+    if (pci_enable_device(pdev))
 		return -EIO;
 
 	ret = smi_drm_thaw(dev);
@@ -338,9 +374,11 @@ static int smi_pm_poweroff(struct device *dev)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 static int smi_enable_vblank(struct drm_device *dev, unsigned int pipe)
 {
-	if (g_specId == SPC_SM750) {
+	struct smi_device *sdev = dev->dev_private;
+	
+	if (sdev->specId == SPC_SM750) {
 		hw750_en_dis_interrupt(1, pipe);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		hw768_en_dis_interrupt(1, pipe);
 	}
 	return 0;
@@ -348,9 +386,11 @@ static int smi_enable_vblank(struct drm_device *dev, unsigned int pipe)
 
 static void smi_disable_vblank(struct drm_device *dev, unsigned int pipe)
 {
-	if (g_specId == SPC_SM750) {
+	struct smi_device *sdev = dev->dev_private;
+	
+	if (sdev->specId == SPC_SM750) {
 		hw750_en_dis_interrupt(0, pipe);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		hw768_en_dis_interrupt(0, pipe);
 	}
 }
@@ -372,10 +412,12 @@ static int smi_irq_postinstall(struct drm_device *dev)
 
 static void smi_irq_uninstall(struct drm_device *dev)
 {
+	struct smi_device *sdev = dev->dev_private;
+
 	/* Disable *all* interrupts */
-	if (g_specId == SPC_SM750) {
+	if (sdev->specId == SPC_SM750) {
 		ddk750_disable_IntMask();
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		ddk768_disable_IntMask();
 	}
 }
@@ -386,8 +428,9 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 	struct drm_device *dev = (struct drm_device *)arg;
 
 	int handled = 0;
+	struct smi_device *sdev = dev->dev_private;
 
-	if (g_specId == SPC_SM750) {
+	if (sdev->specId == SPC_SM750) {
 		if (hw750_check_vsync_interrupt(0)) {
 			/* Clear the panel VSync Interrupt */
 			drm_handle_vblank(dev, 0);
@@ -399,7 +442,7 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 			handled = 1;
 			hw750_clear_vsync_interrupt(1);
 		}
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		if (hw768_check_vsync_interrupt(0)) {
 			/* Clear the panel VSync Interrupt */
 			drm_handle_vblank(dev, 0);
@@ -493,9 +536,6 @@ static struct drm_driver driver = {
 	.minor = DRIVER_MINOR,
 	.patchlevel = DRIVER_PATCHLEVEL,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-	.debugfs_init             = drm_vram_mm_debugfs_init,
-#endif
 	.dumb_create		  = smi_dumb_create_align,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	.dumb_map_offset		  = drm_gem_ttm_dumb_map_offset,
@@ -538,6 +578,9 @@ static struct drm_driver driver = {
 	DRM_GEM_VRAM_DRIVER_PRIME,
 #endif
 	.gem_prime_import_sg_table = smi_gem_prime_import_sg_table,
+	.debugfs_init = smi_debugfs_init,
+
+
 };
 
 static int __init smi_init(void)
@@ -568,7 +611,13 @@ MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE("GPL");
 MODULE_VERSION(_version_);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#ifdef RHEL_MAJOR
+#if RHEL_MAJOR == 9
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
-
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0)
+#ifndef RHEL_MAJOR
+MODULE_IMPORT_NS(DMA_BUF);
+#endif
+#endif

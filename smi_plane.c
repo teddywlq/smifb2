@@ -27,11 +27,6 @@
 #include "hw750.h"
 #include "hw768.h"
 
-extern struct smi_crtc * smi_crtc_tab[MAX_CRTC];
-extern struct drm_encoder * smi_enc_tab[MAX_ENCODER];
-
-//bit 0: DVI, bit 1: VGA, bit 2: HDMI.
-extern int g_m_connector;
 
 __attribute__((unused)) static void colorcur2monocur(void *data);
 
@@ -108,19 +103,21 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 	int x, y;
 	disp_control_t disp_ctrl;
 	int i, ctrl_index = 0, max_enc = 0;	
+	struct smi_device *sdev = plane->dev->dev_private;
+	
 
 	if (!crtc || !fb)
 		return;
 
 
-	if(g_specId == SPC_SM750)
+	if(sdev->specId == SPC_SM750)
 		max_enc = MAX_CRTC;
 	else
 		max_enc = MAX_ENCODER;
 
 	for(i = 0;i < max_enc; i++)
 	{
-		if(crtc == smi_enc_tab[i]->crtc)
+		if(crtc == sdev->smi_enc_tab[i]->crtc)
 		{
 			ctrl_index = i;
 			break;
@@ -130,7 +127,7 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 
 	if(ctrl_index >= MAX_CRTC)  //calc which path should we use for HDMI.
 	{
-		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(g_m_connector);
+		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(sdev->m_connector);
 	}
 
 
@@ -149,7 +146,7 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 			drm_gem_vram_unpin(gbo);
 			LEAVE();
 		}
-		if (g_specId == SPC_SM750) {
+		if (sdev->specId == SPC_SM750) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 			ret = drm_gem_vram_vmap(gbo, &map);
 			
@@ -194,7 +191,7 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 			dbg_msg("smi_bo_pin failed\n");
 			LEAVE();
 		}
-		if (g_specId == SPC_SM750) {
+		if (sdev->specId == SPC_SM750) {
 			plane_addr = smi_bo_kmap(bo, true, NULL);
 			if (IS_ERR(plane_addr))
 				dbg_msg("failed to kmap fbcon\n");
@@ -205,7 +202,7 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 				smi_bo_kunmap(bo);
 				ddk750_enableCursor(disp_ctrl, 1);
 			}
-		} else if (g_specId == SPC_SM768) {
+		} else if (sdev->specId == SPC_SM768) {
 			ddk768_initCursor(disp_ctrl, (u32)cursor_offset, BPP32_BLACK, BPP32_WHITE,
 					  BPP32_BLUE);
 			ddk768_enableCursor(disp_ctrl, 3);
@@ -217,10 +214,10 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 	x = new_state->crtc_x;
 	y = new_state->crtc_y;
 
-	if (g_specId == SPC_SM750) {
+	if (sdev->specId == SPC_SM750) {
 		ddk750_setCursorPosition(disp_ctrl, x < 0 ? -x : x, y < 0 ? -y : y, y < 0 ? 1 : 0,
 					 x < 0 ? 1 : 0);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		ddk768_setCursorPosition(disp_ctrl, x < 0 ? -x : x, y < 0 ? -y : y, y < 0 ? 1 : 0,
 					 x < 0 ? 1 : 0);
 	}
@@ -239,6 +236,7 @@ void smi_cursor_atomic_disable(struct drm_plane *plane,
 #endif
 	disp_control_t disp_ctrl;
 	int i, ctrl_index = 0, max_enc = 0;	
+	struct smi_device *sdev = plane->dev->dev_private;	
 	
 	if (!old_state || !old_state->crtc) {
 		dbg_msg("drm plane:%d not enabled\n", plane->base.id);
@@ -246,14 +244,14 @@ void smi_cursor_atomic_disable(struct drm_plane *plane,
 	}
 
 	
-	if(g_specId == SPC_SM750)
+	if(sdev->specId == SPC_SM750)
 		max_enc = MAX_CRTC;
 	else
 		max_enc = MAX_ENCODER;
 
 	for(i = 0;i < max_enc; i++)
 	{
-		if(old_state->crtc == smi_enc_tab[i]->crtc)
+		if(old_state->crtc == sdev->smi_enc_tab[i]->crtc)
 		{
 			ctrl_index = i;
 			break;
@@ -263,11 +261,11 @@ void smi_cursor_atomic_disable(struct drm_plane *plane,
 
 	if(ctrl_index >= MAX_CRTC)  //calc which path should we use for HDMI.
 	{
-		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(g_m_connector);
+		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(sdev->m_connector);
 	}
 
 	
-	if (g_specId == SPC_SM750) {
+	if (sdev->specId == SPC_SM750) {
 		ddk750_enableCursor(disp_ctrl, 0);
 	} else {
 		ddk768_enableCursor(disp_ctrl, 0);
@@ -392,7 +390,7 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	struct smi_bo *bo;
 #endif
 	int i, ctrl_index = 0, max_enc = 0;	
-
+	struct smi_device *sdev = plane->dev->dev_private;
 	ENTER();
 	if (!state->crtc || !state->fb)
 		LEAVE();
@@ -408,14 +406,14 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 
 	
 
-	if(g_specId == SPC_SM750)
+	if(sdev->specId == SPC_SM750)
 		max_enc = MAX_CRTC;
 	else
 		max_enc = MAX_ENCODER;
 
 	for(i = 0;i < max_enc; i++)
 	{
-		if(state->crtc == smi_enc_tab[i]->crtc)
+		if(state->crtc == sdev->smi_enc_tab[i]->crtc)
 		{
 			ctrl_index = i;
 			break;
@@ -425,7 +423,7 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 
 	if(ctrl_index >= MAX_CRTC)  //calc which path should we use for HDMI.
 	{
-		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(g_m_connector);
+		disp_ctrl = (disp_control_t)smi_calc_hdmi_ctrl(sdev->m_connector);
 	}
 
 
@@ -447,9 +445,9 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	fb->pitches[0] = (fb->pitches[0] + 15) & ~15;
 
 	offset = plane_addr + y * fb->pitches[0] + x * fb->format->cpp[0];
-	if (g_specId == SPC_SM750) {
+	if (sdev->specId == SPC_SM750) {
 		hw750_set_base(disp_ctrl, fb->pitches[0], offset);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		hw768_set_base(disp_ctrl, fb->pitches[0], offset);
 	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)

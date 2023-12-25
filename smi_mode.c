@@ -32,11 +32,6 @@
 #include "smi_dbg.h"
 
 
-struct smi_crtc * smi_crtc_tab[MAX_CRTC];
-struct drm_encoder * smi_enc_tab[MAX_ENCODER];
-
-//bit 0: DVI, bit 1: VGA, bit 2: HDMI.
-int g_m_connector = 0;
 
 int smi_calc_hdmi_ctrl(int m_connector)
 {
@@ -58,16 +53,19 @@ static int smi_crtc_gamma_set(struct drm_crtc *crtc, u16 *r, u16 *g,
 	
 	struct smi_crtc *smi_crtc = to_smi_crtc(crtc); 
 	int i , max_index = 2, ctrl_index, dst_ctrl;
+	struct smi_device *sdev = crtc->dev->dev_private;
+
 	ctrl_index = 0;
 	dst_ctrl = 0;
 
-	if(g_specId == SPC_SM768)
+
+	if(sdev->specId == SPC_SM768)
 		max_index = MAX_ENCODER;
 
 		
 	for(i = 0;i < max_index; i++)
 	{
-		if(crtc == smi_enc_tab[i]->crtc)
+		if(crtc == sdev->smi_enc_tab[i]->crtc)
 		{
 			ctrl_index = i;
 			break;
@@ -78,7 +76,7 @@ static int smi_crtc_gamma_set(struct drm_crtc *crtc, u16 *r, u16 *g,
 
 	if(ctrl_index > SMI1_CTRL)
 	{
-		dst_ctrl= smi_calc_hdmi_ctrl(g_m_connector);
+		dst_ctrl= smi_calc_hdmi_ctrl(sdev->m_connector);
 	}
 
 
@@ -90,11 +88,11 @@ static int smi_crtc_gamma_set(struct drm_crtc *crtc, u16 *r, u16 *g,
 	}
 
 
-	if (g_specId == SPC_SM768) {
+	if (sdev->specId == SPC_SM768) {
 		hw768_setgamma(dst_ctrl, true , lvds_channel);
 		hw768_load_lut(dst_ctrl, crtc->gamma_size, smi_crtc->lut_r, smi_crtc->lut_g, smi_crtc->lut_b);
 	
-	}else if(g_specId == SPC_SM750) {
+	}else if(sdev->specId == SPC_SM750) {
 		hw750_setgamma(dst_ctrl, true);
 		hw750_load_lut(dst_ctrl, crtc->gamma_size, smi_crtc->lut_r, smi_crtc->lut_g, smi_crtc->lut_b);
 	}
@@ -118,6 +116,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 	YUV_BUF_ADDR SrcAddr;
 	BLIT_BLK src;
 	BLIT_BLK dest;
+	
 
 	ENTER();
 	
@@ -131,15 +130,15 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 
 	dbg_msg("***crtc addr:%p\n", crtc);
 
-	dbg_msg("encode->crtc:[%p, %p, %p] \n", smi_enc_tab[0]->crtc, smi_enc_tab[1]->crtc,
-		smi_enc_tab[2] == NULL ? NULL : smi_enc_tab[2]->crtc);
-	dbg_msg("g_m_connector = %d,  DVI [%d], VGA[%d], HDMI[%d] \n", g_m_connector,
-		g_m_connector & 0x1, g_m_connector & 0x2, g_m_connector & 0x4);
+	dbg_msg("encode->crtc:[%p, %p, %p] \n", sdev->smi_enc_tab[0]->crtc, sdev->smi_enc_tab[1]->crtc,
+		sdev->smi_enc_tab[2] == NULL ? NULL : sdev->smi_enc_tab[2]->crtc);
+	dbg_msg("m_connector = %d,  DVI [%d], VGA[%d], HDMI[%d] \n", sdev->m_connector,
+		sdev->m_connector & 0x1, sdev->m_connector & 0x2, sdev->m_connector & 0x4);
 
 	dbg_msg("wxh:%dx%d@%ldHz\n", mode->hdisplay, mode->vdisplay, refresh_rate);
 
-	if (g_specId == SPC_SM750) {
-			if(crtc == smi_enc_tab[0]->crtc)
+	if (sdev->specId == SPC_SM750) {
+			if(crtc == sdev->smi_enc_tab[0]->crtc)
 		{
 			logicalMode.baseAddress = 0;
 			logicalMode.x = mode->hdisplay;
@@ -155,7 +154,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 			setPath(SMI0_PATH, SMI0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
 			
 		}
-		if(crtc == smi_enc_tab[1]->crtc)
+		if(crtc == sdev->smi_enc_tab[1]->crtc)
 		{
 			logicalMode.baseAddress = 0;
 			logicalMode.x = mode->hdisplay;
@@ -186,7 +185,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		dst_ctrl = 0;
 		for(i = 0;i < MAX_ENCODER; i++)
 		{
-			if(crtc == smi_enc_tab[i]->crtc)
+			if(crtc == sdev->smi_enc_tab[i]->crtc)
 			{
 				ctrl_index = i;
 				break;
@@ -197,7 +196,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		
 		if(ctrl_index > SMI1_CTRL)
 		{
-			dst_ctrl=smi_calc_hdmi_ctrl(g_m_connector);
+			dst_ctrl=smi_calc_hdmi_ctrl(sdev->m_connector);
 			dbg_msg("hdmi use channel %d\n",dst_ctrl);
 	
 		}
@@ -284,7 +283,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		else
 			hw768_SetPixelClockFormat(dst_ctrl,0);
 #endif
-		if((g_m_connector & USE_HDMI)&&(ctrl_index > SMI1_CTRL))
+		if((sdev->m_connector & USE_HDMI)&&(ctrl_index > SMI1_CTRL))
 		{
 			int ret = 0;
 			printk("Starting init SM768 HDMI! Use Channel [%d]\n", dst_ctrl);
@@ -367,9 +366,11 @@ static void smi_crtc_atomic_disable(struct drm_crtc *crtc,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 static int smi_enable_vblank(struct drm_crtc *crtc)
 {
-	if (g_specId == SPC_SM750) {
+	struct smi_device *sdev = crtc->dev->dev_private;
+
+	if (sdev->specId == SPC_SM750) {
 		hw750_en_dis_interrupt(1);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		hw768_en_dis_interrupt(1);
 	}
 	return 0;
@@ -377,9 +378,11 @@ static int smi_enable_vblank(struct drm_crtc *crtc)
 
 static void smi_disable_vblank(struct drm_crtc *crtc)
 {
-	if (g_specId == SPC_SM750) {
+	struct smi_device *sdev = crtc->dev->dev_private;
+	
+	if (sdev->specId == SPC_SM750) {
 		hw750_en_dis_interrupt(0);
-	} else if (g_specId == SPC_SM768) {
+	} else if (sdev->specId == SPC_SM768) {
 		hw768_en_dis_interrupt(0);
 	}
 }
@@ -482,6 +485,8 @@ static void smi_encoder_mode_set(struct drm_encoder *encoder,
 static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 {
 	int index =0;
+	struct smi_device *sdev = encoder->dev->dev_private;
+	
 	ENTER();
 	if (encoder->encoder_type  == DRM_MODE_ENCODER_LVDS)
 		index =  0;
@@ -491,8 +496,8 @@ static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 		index = 2;
 	
 
-	dbg_msg("The current connect group = [%d], we deal with con=[%d], mode=[%s]\n", g_m_connector,index, (mode == DRM_MODE_DPMS_OFF)?"Off":"ON");
-	if(g_specId == SPC_SM750)
+	dbg_msg("The current connect group = [%d], we deal with con=[%d], mode=[%s]\n", sdev->m_connector,index, (mode == DRM_MODE_DPMS_OFF)?"Off":"ON");
+	if(sdev->specId == SPC_SM750)
 	{	
 		if (mode == DRM_MODE_DPMS_OFF) {
 			dbg_msg("disable dpms, index=%d\n",index);
@@ -503,12 +508,12 @@ static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 			swPanelPowerSequence(DISP_ON, 4); 
 			dbg_msg("enable dpms ,index=%d\n",index);
 		}
-	}else if(g_specId == SPC_SM768)
+	}else if(sdev->specId == SPC_SM768)
 	{
 
 		if(encoder->encoder_type  == DRM_MODE_ENCODER_LVDS) 
 		{
-			if(g_m_connector == USE_VGA_HDMI||g_m_connector==USE_HDMI)
+			if(sdev->m_connector == USE_VGA_HDMI||sdev->m_connector==USE_HDMI)
 			{
 				dbg_msg("DVI connector off\n");
 				LEAVE();
@@ -518,7 +523,7 @@ static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 		}
 		else if(encoder->encoder_type  == DRM_MODE_ENCODER_DAC)
 		{
-			if(g_m_connector == USE_DVI_HDMI)
+			if(sdev->m_connector == USE_DVI_HDMI)
 			{
 				dbg_msg("VGA connector off\n");
 				LEAVE();
@@ -531,11 +536,11 @@ static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 				hw768_HDMI_Disable_Output();
 			else
 				hw768_HDMI_Enable_Output();
-			if(g_m_connector == USE_DVI_HDMI){
+			if(sdev->m_connector == USE_DVI_HDMI){
 				index = SMI1_CTRL;
 			 	dbg_msg("HDMI connector: index=%d\n",index);
 			}
-			else if(g_m_connector == USE_VGA_HDMI || g_m_connector==USE_HDMI){
+			else if(sdev->m_connector == USE_VGA_HDMI || sdev->m_connector == USE_HDMI){
 				index = SMI0_CTRL;
 			 	dbg_msg("HDMI connector: index=%d\n",index);
 			}else{
@@ -648,7 +653,7 @@ int smi_connector_get_modes(struct drm_connector *connector)
 	}
 	
 	
-	if(g_specId == SPC_SM750)
+	if(sdev->specId == SPC_SM750)
 	{
 		if(connector->connector_type == DRM_MODE_CONNECTOR_DVII)
 		{
@@ -807,6 +812,8 @@ int smi_connector_get_modes(struct drm_connector *connector)
 static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *connector,
 				 struct drm_display_mode *mode)
 {
+	struct smi_device *sdev = connector->dev->dev_private;
+	
 	u32 vrefresh = drm_mode_vrefresh(mode);	
 	
 	if ((vrefresh < 29) || (vrefresh > 61) || (vrefresh > 31 && vrefresh < 59)){  
@@ -819,7 +826,7 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 	
 	
 	if(mode->hdisplay > 1920) {
-		if ((g_m_connector == USE_DVI_HDMI) || (g_m_connector == USE_VGA_HDMI)||(g_specId == SPC_SM750))
+		if ((sdev->m_connector == USE_DVI_HDMI) || (sdev->m_connector == USE_VGA_HDMI)||(sdev->specId == SPC_SM750))
 			return MODE_NOMODE;
 	}
 
@@ -852,21 +859,23 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 													  bool force)
 {
 	struct smi_connector *smi_connector = to_smi_connector(connector);
+	struct smi_device *sdev = connector->dev->dev_private;
+		
 #ifdef USE_HDMICHIP
 	int ret = 0;
 	void *edid_buf;
 #endif
 
-	if (g_specId == SPC_SM750)
+	if (sdev->specId == SPC_SM750)
 	{
 		if (connector->connector_type == DRM_MODE_CONNECTOR_DVII)
 		{
 
 			if (force_connect & USE_DVI){
-					g_m_connector = g_m_connector | USE_DVI;
+					sdev->m_connector = sdev->m_connector | USE_DVI;
 					return connector_status_connected;
 			}else if(force_connect){
-					g_m_connector = g_m_connector & (~USE_DVI);
+					sdev->m_connector = sdev->m_connector & (~USE_DVI);
 					return connector_status_disconnected;
 			}
 #ifdef USE_HDMICHIP	
@@ -902,10 +911,10 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
 			if (force_connect & USE_VGA){
-					g_m_connector = g_m_connector | USE_VGA;
+					sdev->m_connector = sdev->m_connector | USE_VGA;
 					return connector_status_connected;
 			}else if(force_connect){
-					g_m_connector = g_m_connector & (~USE_VGA);
+					sdev->m_connector = sdev->m_connector & (~USE_VGA);
 					return connector_status_disconnected;
 			}
 
@@ -943,23 +952,23 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 		if(connector->connector_type == DRM_MODE_CONNECTOR_DVII)
 		{
 			if ((force_connect & USE_DVI) || (lvds_channel)){
-				g_m_connector = g_m_connector | USE_DVI;
+				sdev->m_connector = sdev->m_connector | USE_DVI;
 				return connector_status_connected;
 			}else if(force_connect){
-					g_m_connector = g_m_connector & (~USE_DVI);
+					sdev->m_connector = sdev->m_connector & (~USE_DVI);
 					return connector_status_disconnected;
 			}
 
 			if (!drm_probe_ddc(&smi_connector->adapter))
 			{
 				dbg_msg("detect DVI DO NOT connected. \n");
-				g_m_connector = g_m_connector & (~USE_DVI);
+				sdev->m_connector = sdev->m_connector & (~USE_DVI);
 				return connector_status_disconnected; 
 			}
 			else
 			{
 				dbg_msg("detect DVI connected(GPIO30,31)\n");
-				g_m_connector =g_m_connector |USE_DVI;
+				sdev->m_connector =sdev->m_connector |USE_DVI;
 				return connector_status_connected;
 			}
 
@@ -967,23 +976,23 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
 			if (force_connect & USE_VGA){
-				g_m_connector = g_m_connector | USE_VGA;
+				sdev->m_connector = sdev->m_connector | USE_VGA;
 				return connector_status_connected;
 			}else if(force_connect){
-					g_m_connector = g_m_connector & (~USE_VGA);
+					sdev->m_connector = sdev->m_connector & (~USE_VGA);
 					return connector_status_disconnected;
 			}
 
 			if (!drm_probe_ddc(&smi_connector->adapter))
 			{
 				dbg_msg("detect CRT DO NOT connected. \n");
-				g_m_connector =g_m_connector&(~USE_VGA);
+				sdev->m_connector =sdev->m_connector&(~USE_VGA);
 				return connector_status_disconnected;
 			}
 			else
 			{
 				dbg_msg("detect CRT connected(GPIO 6, 7)\n");
-				g_m_connector = g_m_connector|USE_VGA;
+				sdev->m_connector = sdev->m_connector|USE_VGA;
 				return connector_status_connected;
 			}
 		
@@ -991,19 +1000,19 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
 		{
 
-			if ((g_m_connector == USE_DVI_VGA) || (g_m_connector == USE_ALL))
+			if ((sdev->m_connector == USE_DVI_VGA) || (sdev->m_connector == USE_ALL))
 			{
 				hw768_HDMI_Disable_Output();
 				dbg_msg("set HDMI connector_status_disconnected because of VGA+DVI\n");
-				g_m_connector = g_m_connector&(~USE_HDMI);
+				sdev->m_connector = sdev->m_connector&(~USE_HDMI);
 				return connector_status_disconnected;  //If VGA and DVI are both connected, disable HDMI
 			}
 
 			if (force_connect & USE_HDMI){
-				g_m_connector = g_m_connector | USE_HDMI;
+				sdev->m_connector = sdev->m_connector | USE_HDMI;
 				return connector_status_connected;
 			}else if(force_connect){
-					g_m_connector = g_m_connector & (~USE_HDMI);
+					sdev->m_connector = sdev->m_connector & (~USE_HDMI);
 					return connector_status_disconnected;
 			}
 
@@ -1014,19 +1023,19 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 #endif
 			{
 				dbg_msg("detect HDMI connected(GPIO 8,9) \n");
-				g_m_connector = g_m_connector|USE_HDMI;
+				sdev->m_connector = sdev->m_connector|USE_HDMI;
 				return connector_status_connected; 
 			}
 			else if(HDMI_connector_detect())
 			{
 			    dbg_msg("detect HDMI connected(HPG pull high) \n");
-				g_m_connector = g_m_connector|USE_HDMI;
+				sdev->m_connector = sdev->m_connector|USE_HDMI;
 				return connector_status_connected; 
 			}
 			else
 			{
 				dbg_msg("detect HDMI DO NOT connected. \n");
-				g_m_connector = g_m_connector&(~USE_HDMI);
+				sdev->m_connector = sdev->m_connector&(~USE_HDMI);
 				return connector_status_disconnected;
 			}
 		
@@ -1055,7 +1064,7 @@ static void smi_connector_destroy(struct drm_connector *connector)
 		sdev->vga_edid = NULL;
 	}
 
-	if(g_specId == SPC_SM768)
+	if(sdev->specId == SPC_SM768)
 	{
 		hw768_AdaptI2CCleanBus(connector);
 	}
@@ -1091,6 +1100,7 @@ static struct drm_connector *smi_connector_init(struct drm_device *dev, int inde
 {
 	struct drm_connector *connector;
 	struct smi_connector *smi_connector;
+	struct smi_device *sdev = dev->dev_private;
 
 	smi_connector = kzalloc(sizeof(struct smi_connector), GFP_KERNEL);
 	if (!smi_connector)
@@ -1114,7 +1124,7 @@ static struct drm_connector *smi_connector_init(struct drm_device *dev, int inde
 			printk("error index of Connector\n");
 	}
 
-	if (g_specId == SPC_SM750) 
+	if (sdev->specId == SPC_SM750) 
 	{
 		hw750_AdaptI2CInit(smi_connector);
 	}
@@ -1148,7 +1158,7 @@ int smi_modeset_init(struct smi_device *cdev)
 	if(smi_bpp >= 24)
 		smi_bpp = 32;
 
-	if(g_specId == SPC_SM750)
+	if(cdev->specId == SPC_SM750)
 		smi_bpp = 16;
 
 #ifdef PRIME
@@ -1163,7 +1173,7 @@ int smi_modeset_init(struct smi_device *cdev)
 	cdev->dev->mode_config.max_width = SMI_MAX_FB_WIDTH;
 	cdev->dev->mode_config.max_height = SMI_MAX_FB_HEIGHT;
 
-	if (g_specId == SPC_SM750) { // limit to maximum size supported+		
+	if (cdev->specId == SPC_SM750) { // limit to maximum size supported+		
 		cdev->dev->mode_config.max_width = 3840;
 		cdev->dev->mode_config.max_height = 2160;
 	}
@@ -1183,12 +1193,9 @@ int smi_modeset_init(struct smi_device *cdev)
 	{
 		smi_crtc = smi_crtc_init(cdev->dev, index);
 		smi_crtc->crtc_index = index;
-		smi_crtc_tab[index] = smi_crtc;
-		dbg_msg("******smi_crtc_tab[%d]:%p******\n",index, smi_crtc_tab[index]);
-
 	}
 	
-	if(g_specId == SPC_SM768)
+	if(cdev->specId == SPC_SM768)
 		max_index = MAX_ENCODER;
 	
 	for(index = 0; index < max_index ; index ++)
@@ -1198,7 +1205,7 @@ int smi_modeset_init(struct smi_device *cdev)
 			DRM_ERROR("smi_encoder_tmds_init failed\n");
 			return -1;
 		}
-		smi_enc_tab[index] = encoder;
+		cdev->smi_enc_tab[index] = encoder;
 
 		connector = smi_connector_init(cdev->dev, index);
 		if (!connector) {
@@ -1214,7 +1221,11 @@ int smi_modeset_init(struct smi_device *cdev)
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-	if ((g_specId == SPC_SM750 && (cdev->dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || g_specId == SPC_SM768) {
+#if defined(__arm__) || defined(__aarch64__)
+        if (cdev->specId == SPC_SM750 || cdev->specId == SPC_SM768) {
+#else	
+		if ((cdev->specId == SPC_SM750 && (cdev->dev->pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || cdev->specId == SPC_SM768) {
+#endif
 		int ret = 0;
 		ret = drm_fbdev_generic_setup(cdev->dev, cdev->dev->mode_config.preferred_depth);
 		if (ret) {

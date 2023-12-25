@@ -34,8 +34,6 @@
 #include "hw768.h"
 #include "smi_dbg.h"
 
-#define MB(x) (x << 20) /* Macro for Mega Bytes */
-
 
 static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_file *file,
 				      unsigned flags, unsigned color, struct drm_clip_rect *clips,
@@ -198,7 +196,7 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 
 
 
-#else
+#else//5.3.0
 	dst_bo = gem_to_smi_bo(obj);
 	if (!dst_bo->pin_count) {
 		ret = smi_bo_pin(dst_bo, TTM_PL_FLAG_VRAM, NULL);
@@ -328,10 +326,10 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 
 	switch (pdev->device) {
 	case PCI_DEVID_LYNX_EXP:
-		g_specId = SPC_SM750;
+		cdev->specId = SPC_SM750;
 		break;
 	case PCI_DEVID_SM768:
-		g_specId = SPC_SM768;
+		cdev->specId = SPC_SM768;
 		break;
 	default:
 		return -ENODEV;
@@ -344,7 +342,7 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		dev_err(&pdev->dev, "Fatal error during GPU init: %d\n", r);
 		goto out;
 	}
-	if(g_specId == SPC_SM750)
+	if(cdev->specId == SPC_SM750)
 	{
 	    if (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW) {
 			cdev->is_boot_gpu = true;
@@ -374,13 +372,10 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		EP_HDMI_Init(1);
 		EP_HDMI_Set_Video_Timing(1,1);
 #endif
-		
+
 		if(audio_en)
 			smi_audio_init(dev);
-
 	}	
-	
-
 
 	r = smi_mm_init(cdev);
 	if (r) {
@@ -434,9 +429,9 @@ void smi_driver_unload(struct drm_device *dev)
 #else
 	free_irq(pdev->irq, dev);
 	/* Disable *all* interrupts */
-	if (g_specId == SPC_SM750) {
+	if (cdev->specId == SPC_SM750) {
 		ddk750_disable_IntMask();
-	} else if (g_specId == SPC_SM768) {
+	} else if (cdev->specId == SPC_SM768) {
 		ddk768_disable_IntMask();
 	}
 #endif
@@ -448,13 +443,11 @@ void smi_driver_unload(struct drm_device *dev)
 	smi_mm_fini(cdev);
 	smi_device_fini(cdev);
 
-	if(g_specId == SPC_SM768)
+	if(cdev->specId == SPC_SM768)
 	{
 		if(audio_en)
 			smi_audio_remove(dev);
-
     }
-
 
 	vfree(cdev->regsave);
 	kfree(cdev);
@@ -567,7 +560,9 @@ void smi_gem_free_object(struct drm_gem_object *obj)
 static void smi_vram_fini(struct smi_device *cdev)
 {
 	iounmap(cdev->rmmio);
+	iounmap(cdev->vram);
 	cdev->rmmio = NULL;
+	cdev->vram = NULL;
 
 }
 
@@ -585,10 +580,19 @@ static int smi_vram_init(struct smi_device *cdev)
 #endif
 
 	/* VRAM Size */
-	if (g_specId == SPC_SM750)
+	if (cdev->specId == SPC_SM750)
 		cdev->vram_size = ddk750_getFrameBufSize();
 	else
 		cdev->vram_size = ddk768_getFrameBufSize();
+
+#ifdef NO_WC
+	cdev->vram = ioremap(cdev->vram_base,cdev->vram_size);
+#else
+	cdev->vram = ioremap_wc(cdev->vram_base,cdev->vram_size);
+#endif
+
+	if (cdev->vram == NULL)
+		return -ENOMEM;
 
 	return 0;
 }
@@ -640,7 +644,7 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 	if (cdev->rmmio == NULL)
 		return -ENOMEM;
 
-	if (g_specId == SPC_SM750)
+	if (cdev->specId == SPC_SM750)
 		ddk750_set_mmio(cdev->rmmio, pdev->device, pdev->revision);
 	else
 		ddk768_set_mmio(cdev->rmmio, pdev->device, pdev->revision);
@@ -649,6 +653,8 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 	if (ret) {
 		return ret;
 	}
+
+	cdev->m_connector = 0;
 
 	return 0;
 }

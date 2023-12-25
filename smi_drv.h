@@ -37,11 +37,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20231009"
+#define DRIVER_DATE		"20231225"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		2
-#define DRIVER_PATCHLEVEL	6
+#define DRIVER_PATCHLEVEL	8
 
 #define SMIFB_CONN_LIMIT 3
 
@@ -51,7 +51,7 @@
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.2.6.0"
+#define _version_	"2.2.8.0"
 
 #undef  NO_WC
 
@@ -71,6 +71,10 @@
 
 #define SMI_MAX_FB_HEIGHT 8192
 #define SMI_MAX_FB_WIDTH 8192
+
+#define MAX_CRTC 2
+#define MAX_ENCODER 3
+
 
 #define smi_DPMS_CLEARED (-1)
 
@@ -106,7 +110,13 @@ struct smi_device {
 	resource_size_t vram_size;
 	resource_size_t vram_base;
 	void __iomem *rmmio;
+	void __iomem *vram;
 
+	int specId;
+	
+	int m_connector;  //bit 0: DVI, bit 1: VGA, bit 2: HDMI.
+
+	struct drm_encoder *smi_enc_tab[MAX_ENCODER];
 
 	struct smi_mode_info mode_info;
 
@@ -119,6 +129,7 @@ struct smi_device {
 	} ttm;
 #endif
 	bool mm_inited;
+	void *vram_save;
 	union {
 		struct smi_750_register *regsave;
 		struct smi_768_register *regsave_768;
@@ -154,8 +165,7 @@ static inline struct smi_connector *to_smi_connector(struct drm_connector *conne
 	return container_of(connector, struct smi_connector, base);
 }
 
-#define MAX_CRTC 2
-#define MAX_ENCODER 3
+
 
 /* smi_main.c */
 int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci_dev *pdev,
