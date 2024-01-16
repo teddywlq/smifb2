@@ -62,7 +62,12 @@ static int debugfs_pwm_get(void *data, u64 *val)
 
 DEFINE_DEBUGFS_ATTRIBUTE(fops_pwm, debugfs_pwm_get, debugfs_pwm_set, "%llu\n");
 
-void smi_debugfs_init(struct drm_minor *minor)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+     void smi_debugfs_init(struct drm_minor *minor)
+#else
+     int smi_debugfs_init(struct drm_minor *minor)
+#endif
+
 {
 //	struct drm_device *drm = minor->dev;
 
@@ -71,5 +76,11 @@ void smi_debugfs_init(struct drm_minor *minor)
 	debugfs_create_u32("smi_debug", S_IRUGO | S_IWUSR, minor->debugfs_root, &smi_debug);
 
 	debugfs_create_u32("nopnp", S_IRUGO | S_IWUSR, minor->debugfs_root, &force_connect);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+    return 0;
+#endif
+
+
 }
 
