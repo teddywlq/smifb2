@@ -23,8 +23,8 @@ struct sm768chip {
 	unsigned long ppointer;
 	unsigned long cpointer;
 	
-	volatile unsigned char __iomem *pvReg;
-	unsigned char __iomem *pvMem;
+	void __iomem *pvReg;
+	void __iomem *pvMem;
 
 	unsigned long vidreg_start;
 	unsigned long vidreg_size;	
