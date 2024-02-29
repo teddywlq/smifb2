@@ -313,12 +313,7 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 	struct pci_dev *pdev; 
 	int r;
 	
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
-
 	cdev = kzalloc(sizeof(struct smi_device), GFP_KERNEL);
 	if (cdev == NULL)
 		return -ENOMEM;
@@ -569,15 +564,10 @@ static void smi_vram_fini(struct smi_device *cdev)
 /* Map the framebuffer from the card and configure the core */
 static int smi_vram_init(struct smi_device *cdev)
 {
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	struct pci_dev *pdev = to_pci_dev(cdev->dev->dev);
+
 	/* BAR 0 is VRAM */
 	cdev->vram_base = pci_resource_start(pdev, 0);
-#else	
-	/* BAR 0 is VRAM */
-	cdev->vram_base = pci_resource_start(cdev->dev->pdev, 0);
-#endif
 
 	/* VRAM Size */
 	if (cdev->specId == SPC_SM750)

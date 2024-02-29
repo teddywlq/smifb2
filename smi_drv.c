@@ -272,11 +272,8 @@ static int smi_drm_freeze(struct drm_device *dev)
 	if (ret)
 		return ret;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+
 	pci_save_state(to_pci_dev(dev->dev));
-#else
-    pci_save_state(dev->pdev);
-#endif
 
 	LEAVE(0);
 }

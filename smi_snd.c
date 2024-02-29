@@ -608,11 +608,7 @@ static int snd_falconi2s_create(struct snd_card *card,
 		.dev_free = snd_falconi2s_dev_free,
 	};
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
 
 	*smichip = NULL;
 
@@ -702,11 +698,8 @@ int smi_audio_init(struct drm_device *dev)
 	struct snd_card *card;
 	struct sm768chip *chip;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+
 	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
 
 	if(audio_en == 1)
 		use_wm8978 = 0;
@@ -776,12 +769,8 @@ void smi_audio_remove(struct drm_device *dev)
 	struct smi_device *sdev = dev->dev_private;
 	struct snd_card *card = sdev->card;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
-	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
 
+	pdev = to_pci_dev(dev->dev);
 	
 	dbg_msg("perpare to free irq, pci irq:%u, chip_irq_id=0x%p\n", pdev->irq, chip_irq_id);
 	if(pdev->irq){				

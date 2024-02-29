@@ -201,11 +201,8 @@ int smi_mm_init(struct smi_device *smi)
 	struct drm_device *dev = smi->dev;
 	unsigned long vram_size = smi->vram_size;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+
 	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
 	struct ttm_bo_device *bdev = &smi->ttm.bdev;
@@ -266,12 +263,9 @@ void smi_mm_fini(struct smi_device *smi)
 	struct pci_dev *pdev;
 	struct drm_device *dev = smi->dev;
 	
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
-	pdev = to_pci_dev(dev->dev);
-#else
-	pdev = dev->pdev;
-#endif
 
+	pdev = to_pci_dev(dev->dev);
+	
 	if (!smi->mm_inited)
 		return;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0)
