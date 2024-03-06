@@ -126,8 +126,8 @@ static void claim(void)
 
 static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	struct drm_device *dev;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	struct smi_device *sdev;
 #endif
 	int ret __attribute__((unused)) = 0;
@@ -204,7 +204,10 @@ err_pci_disable_device:
 	pci_disable_device(pdev);
 	return ret;
 #else
-	return drm_get_pci_dev(pdev, ent, &driver);
+	ret =  drm_get_pci_dev(pdev, ent, &driver);
+	dev = pci_get_drvdata(pdev);
+	smi_debugfs_init(dev->primary);
+	return ret;
 #endif
 }
 
@@ -575,7 +578,9 @@ static struct drm_driver driver = {
 	DRM_GEM_VRAM_DRIVER_PRIME,
 #endif
 	.gem_prime_import_sg_table = smi_gem_prime_import_sg_table,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	.debugfs_init = smi_debugfs_init,
+#endif
 
 
 };
