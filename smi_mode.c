@@ -1158,9 +1158,6 @@ int smi_modeset_init(struct smi_device *cdev)
 	if(smi_bpp >= 24)
 		smi_bpp = 32;
 
-	if(cdev->specId == SPC_SM750)
-		smi_bpp = 16;
-
 #ifdef PRIME
 	smi_bpp = 32;
 #endif
