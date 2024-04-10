@@ -23,6 +23,7 @@
 long initDisplay()
 {
 
+#if 0
     /* set 80024[30:28] and 88024[30:28] to 0x3 in order for the DAC to output stronger signal. */
     unsigned long value;
     value = peekRegisterDWord(CRT_DETECT);
@@ -33,7 +34,7 @@ long initDisplay()
     value &= 0xCFFFFFFF;
     value |= 0x30000000;
     pokeRegisterDWord(CRT_DETECT + CHANNEL_OFFSET, value);
-
+#endif
     return 0;
 
 }
