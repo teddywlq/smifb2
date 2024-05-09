@@ -9,8 +9,6 @@
 
 
 
-#define PEEK32(addr) readl((addr)+mmio768)
-#define POKE32(addr,data) writel((data),(addr)+mmio768)
 
 
 #define peekRegisterDWord(addr) readl((addr)+mmio768)
