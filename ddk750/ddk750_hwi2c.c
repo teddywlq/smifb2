@@ -134,7 +134,9 @@ long ddk750_AdaptHWI2CInit(struct smi_connector *connector)
     ddk750_hwI2CInit(1);
 
     connector->adapter.owner = THIS_MODULE;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
     connector->adapter.class = I2C_CLASS_DDC;
+#endif
     snprintf(connector->adapter.name, I2C_NAME_SIZE, "SMI HW I2C Bus");
     connector->adapter.dev.parent = connector->base.dev->dev;
     i2c_set_adapdata(&connector->adapter, connector);
