@@ -65,6 +65,13 @@ void smi_gem_prime_unpin(struct drm_gem_object *obj)
 
 	smi_bo_unpin(bo);
 }
+#else
+
+
+static const struct drm_gem_object_funcs smi_gem_object_funcs = {
+	.free = smi_gem_free_object,
+};
+
 #endif
 
 struct drm_gem_object *smi_gem_prime_import_sg_table(struct drm_device *dev,
@@ -88,6 +95,12 @@ struct drm_gem_object *smi_gem_prime_import_sg_table(struct drm_device *dev,
 	if (IS_ERR(gbo)) {
 		ret = PTR_ERR(gbo);
 	}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+	gbo->bo.base.funcs = &smi_gem_object_funcs;
+#else
+	gbo->gem.funcs = &smi_gem_object_funcs;
+#endif
 
 #else
 	struct reservation_object *resv = attach->dmabuf->resv;

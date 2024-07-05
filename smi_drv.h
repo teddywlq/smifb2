@@ -179,8 +179,8 @@ int smi_dumb_create(struct drm_file *file, struct drm_device *dev,
 int smi_dumb_mmap_offset(struct drm_file *file, struct drm_device *dev, uint32_t handle,
 			 uint64_t *offset);
 int smi_dumb_destroy(struct drm_file *file, struct drm_device *dev, uint32_t handle);
-void smi_gem_free_object(struct drm_gem_object *obj);
 #endif
+void smi_gem_free_object(struct drm_gem_object *obj);
 
 /* smi_plane.c */
 struct drm_plane *smi_plane_init(struct smi_device *cdev, unsigned int possible_crtcs,
