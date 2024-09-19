@@ -173,14 +173,9 @@ static mode_parameter_t gDefaultModeParamTable[] =
  {2528,1856,1952,224, NEG,1439,1392,1393, 3, POS,218300000, 86353, 60, NEG},
 /* {2560,1856,1984,224, NEG,1500,1392,1393, 3, POS,288000000,112500, 75, NEG},*/
 
-/* 1920 x 1080 [16:9]. This is a make-up value, need to be proven. 
-   The Pixel clock is calculated based on the maximum resolution of
-   "Single Link" DVI, which support a maximum 165MHz pixel clock.
-   The second values are taken from:
-   http://www.tek.com/Measurement/App_Notes/25_14700/eng/25W_14700_3.pdf
- */
-/* {2560,1920,2048,208, NEG,1125,1080,1081, 3, POS,172800000, 67500, 60, NEG}, */
- {2200,1920,2008, 44, NEG,1125,1080,1081, 3, POS,148500000, 67500, 60, POS},
+/* 1920 x 1080 [16:9]. */
+
+{2200,1920,2008, 44, POS,1125,1080,1084, 5, POS,148500000, 67500, 60, POS},  //Adjusted
 
 /* 1920 x 1200 [8:5]. -- Widescreen Ultra eXtended Graphics Array (WUXGA) */
  {2592,1920,2048,208, NEG,1242,1200,1201, 3, POS,193160000, 74522, 60, NEG},
@@ -197,7 +192,7 @@ static mode_parameter_t gDefaultModeParamTable[] =
  {2720,2560,2608,32, POS,1481,1440,1443, 5, NEG,241500000, 88000, 60, NEG},
 
 /* 3840 x 2160 (UHD) */
- {4400,3840,4016,88, POS,2250,2160,2168, 10, POS,297000000, 67500, 30, NEG},
+ {4400,3840,4016,88, POS,2250,2160,2168, 10, POS,297000000, 67500, 30, POS}, //Adjusted
 
 
 /* End of table. */
