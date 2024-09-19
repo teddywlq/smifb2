@@ -21,13 +21,15 @@ endif
 ${Driver}-objs += ddk768/ddk768_help.o  ddk768/ddk768_chip.o  ddk768/ddk768_clock.o  ddk768/ddk768_mode.o ddk768/ddk768_power.o ddk768/ddk768_helper.o ddk768/ddk768_display.o ddk768/ddk768_2d.o \
 ddk768/ddk768_edid.o ddk768/ddk768_swi2c.o ddk768/ddk768_hwi2c.o ddk768/ddk768_cursor.o ddk768/ddk768_video.o ddk768/ddk768_hdmi.o ddk768/ddk768_pwm.o ddk768/ddk768_timer.o ddk768/ddk768_intr.o 
 
-
-
+ifeq ($(noaudio),1)
+EXTRA_CFLAGS += -DNO_AUDIO
+else
 ${Driver}-y += smi_snd.o
 ${Driver}-y += ddk768/ddk768_iis.o
 ${Driver}-y += ddk768/uda1345.o
 ${Driver}-y += ddk768/l3.o
 ${Driver}-y += ddk768/wm8978.o
+endif
 
 ifeq ($(prime),1)
 EXTRA_CFLAGS += -DPRIME

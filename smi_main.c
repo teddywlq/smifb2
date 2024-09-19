@@ -367,9 +367,10 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		EP_HDMI_Init(1);
 		EP_HDMI_Set_Video_Timing(1,1);
 #endif
-
+#ifndef NO_AUDIO
 		if(audio_en)
 			smi_audio_init(dev);
+#endif
 	}	
 
 	r = smi_mm_init(cdev);
@@ -440,11 +441,14 @@ void smi_driver_unload(struct drm_device *dev)
 	smi_mm_fini(cdev);
 	smi_device_fini(cdev);
 
+
+#ifndef NO_AUDIO
 	if(cdev->specId == SPC_SM768)
 	{
 		if(audio_en)
 			smi_audio_remove(dev);
     }
+#endif
 
 	kvfree(cdev->regsave);
 	kfree(cdev);

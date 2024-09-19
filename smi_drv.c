@@ -266,8 +266,10 @@ static int smi_drm_freeze(struct drm_device *dev)
 		smi_vram_suspend(sdev,16);
 		hw750_suspend(sdev->regsave);
 	}else if(sdev->specId == SPC_SM768){
+#ifndef NO_AUDIO
 		if(audio_en)
 			 smi_audio_suspend();
+#endif
 		smi_vram_suspend(sdev,32);
 		hw768_suspend(sdev->regsave_768);
     }
@@ -295,8 +297,10 @@ static int smi_drm_thaw(struct drm_device *dev)
 	}else if(sdev->specId == SPC_SM768){
 		smi_vram_resume(sdev,32);
 		hw768_resume(sdev->regsave_768);
+#ifndef NO_AUDIO
 		if(audio_en)
 			smi_audio_resume();
+#endif
 		if (lvds_channel == 1)
 			hw768_enable_lvds(1);
 		else if (lvds_channel == 2) {
