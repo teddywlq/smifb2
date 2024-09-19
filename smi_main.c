@@ -398,7 +398,7 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 	}
 
 
-	cdev->regsave = vmalloc(1024);
+	cdev->regsave = kvmalloc(1024,GFP_KERNEL);
 	if (!cdev->regsave) {
 		DRM_ERROR("cannot allocate regsave\n");
 		//return -ENOMEM;
@@ -446,7 +446,7 @@ void smi_driver_unload(struct drm_device *dev)
 			smi_audio_remove(dev);
     }
 
-	vfree(cdev->regsave);
+	kvfree(cdev->regsave);
 	kfree(cdev);
 	dev->dev_private = NULL;
 }

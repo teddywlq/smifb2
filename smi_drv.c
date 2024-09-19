@@ -231,7 +231,7 @@ static void smi_pci_remove(struct pci_dev *pdev)
 static int smi_vram_suspend(struct smi_device *sdev,int vram_size)
 {
 
-	sdev->vram_save = vmalloc(vram_size << 20);
+	sdev->vram_save = kvmalloc(vram_size << 20,GFP_KERNEL);
 	if (!sdev->vram_save)			
 		goto malloc_failed;
 	
@@ -241,7 +241,7 @@ static int smi_vram_suspend(struct smi_device *sdev,int vram_size)
 	
 malloc_failed:
 	if (sdev->vram_save) {			
-		vfree(sdev->vram_save); 		
+		kvfree(sdev->vram_save); 		
 		sdev->vram_save = NULL; 	
 	}	
 	return -ENOMEM;
@@ -251,7 +251,7 @@ static void smi_vram_resume(struct smi_device *sdev,int vram_size)
 {
 
 	memcpy_toio(sdev->vram, sdev->vram_save, vram_size << 20);
-	vfree(sdev->vram_save); 		
+	kvfree(sdev->vram_save); 		
 	sdev->vram_save = NULL; 	
 }
 
