@@ -378,12 +378,6 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		goto out;
 	}
 
-	dev->mode_config.funcs = (void *)&smi_mode_config_funcs;
-	r = smi_modeset_init(cdev);
-	if (r) {
-		DRM_ERROR("Fatal error during modeset init: %d\n", r);
-		goto out;
-	}
 	drm_vblank_init(dev, dev->mode_config.num_crtc);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
@@ -394,6 +388,15 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 #endif
 	if (r)
 		DRM_ERROR("install irq failed , ret = %d\n", r);
+
+
+	dev->mode_config.funcs = (void *)&smi_mode_config_funcs;
+	r = smi_modeset_init(cdev);
+	if (r) {
+		DRM_ERROR("Fatal error during modeset init: %d\n", r);
+		goto out;
+	}
+
 
 	cdev->regsave = vmalloc(1024);
 	if (!cdev->regsave) {
