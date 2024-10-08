@@ -661,7 +661,7 @@ int smi_connector_get_modes(struct drm_connector *connector)
 
 			edid_buf = sdev->si9022_edid;
 			if(ddk750_GetDDC_9022Access())
-				ret = ddk750_edidReadMonitorEx(SMI0_CTRL, edid_buf, 256, 0, 30, 31);
+				ret = ddk750_edidReadMonitorEx(PANEL_PATH, edid_buf, 256, 0, 30, 31);
 			ddk750_Release9022DDC();
 			if(ret){
               	drm_connector_update_edid_property(connector, sdev->si9022_edid);
@@ -885,7 +885,7 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 			}
 #ifdef USE_HDMICHIP	
 			if (ddk750_GetDDC_9022Access())
-				ret = ddk750_edidReadMonitorEx(SMI0_CTRL, edid_buf, 128, 0, 30, 31);
+				ret = ddk750_edidReadMonitorEx(PANEL_PATH, edid_buf, 128, 0, 30, 31);
 			ddk750_Release9022DDC();
 			if (ret)
 			{
