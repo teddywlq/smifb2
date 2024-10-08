@@ -5,6 +5,8 @@
 #include <drm/drm_print.h>
 #include "smi_drv.h"
 #include "ddk768/ddk768_pwm.h"
+#include <linux/vmalloc.h>
+#include <linux/debugfs.h>
 #include <drm/drm_debugfs.h>
 #include "smi_debugfs.h"
 
