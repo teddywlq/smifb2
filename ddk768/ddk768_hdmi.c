@@ -5,6 +5,8 @@
 #include "ddk768_hdmi.h"
 #include "ddk768_reg.h"
 #include "ddk768_power.h"
+#include "ddk768_chip.h"
+
 #include "hdmiregs.h"
 
 
@@ -26,8 +28,7 @@ static hdmi_PHY_param_t gHdmiPHYParamTable[] =
  { 0x22, 0x0A, 0x00, 0x40, 0x40, 0x1E, 0x94, 0x2E, 0x70, 0x00},
 
 /* TMDS clock range 100-150 MHz [8bpc] */  
-//{ 0x22, 0x0E, 0x00, 0x40, 0x40, 0x1E, 0x91, 0x2E, 0x70, 0x00}, //1080P  5B:0x92->0x91
- { 0x22, 0x0E, 0x00, 0x40, 0x40, 0x1E, 0x95, 0x2E, 0x72, 0x00}, //1080P  5B:0x92->0x91
+ { 0x22, 0x0E, 0x00, 0x40, 0x40, 0x1E, 0x91, 0x2E, 0x70, 0x00}, //1080P  5B:0x92->0x91
 
 /* TMDS clock range 150-200 MHz [8bpc] */
  { 0x22, 0x0E, 0x00, 0x40, 0x40, 0x1E, 0x94, 0x2E, 0x71, 0x00},
@@ -46,18 +47,18 @@ static hdmi_PHY_param_t gHdmiPHYParamTable[] =
 /* HDMI mode VIC value table.*/
 static hdmi_vic_param_t gHdmiVICParamTable[] = 
 {
-    {640,  480,  1},
-    {720,  480,  2},   
-    {1280, 720,  4}, 
-    {1440, 480,  14}, 
-    {1920, 1080, 16}, 
-    {2880, 480,  35}, 
-    {1680, 720,  83}, 
-    {2560, 1080, 90}, 
-    {3840, 2160, 95},
-    
+    {640,  480,  1, 0x18},
+    {720,  480,  2, 0x00},   
+    {1280, 720,  4, 0x28}, 
+    {1440, 480,  14, 0x00}, 
+    {1920, 1080, 16, 0x28}, 
+    {2880, 480,  35, 0x00}, 
+    {1680, 720,  83, 0x00}, 
+    {2560, 1080, 90, 0x00}, 
+    {3840, 2160, 95, 0x00},
+
     /* End of table. */
-    {0, 0, 0},
+    {0, 0, 0,0},
 };
 
 //-----------------------------------------------------------------------------
@@ -71,8 +72,9 @@ BYTE g_ucHDMIedidRead=0;
 BYTE AudioMode = 0;
 BYTE gEdidBuffer[256] = {0};
 
+
 /* Find mode VIC parameer from the table according to Width & Height*/
-unsigned char FindVicParam(unsigned long Width, unsigned long Height)
+hdmi_vic_param_t *FindVicParam(unsigned long Width, unsigned long Height)
 {
     unsigned char index = 0;
     hdmi_vic_param_t * pVicTable = gHdmiVICParamTable;
@@ -80,14 +82,14 @@ unsigned char FindVicParam(unsigned long Width, unsigned long Height)
     while (pVicTable[index].Width != 0)
     {
         if ((pVicTable[index].Width == Width) && (pVicTable[index].Height == Height)) 
-            return pVicTable[index].Vic;
-       
+            return &pVicTable[index];
+
         /* Next entry */
         index++;
     }
 
     /* If no such a mode, set vic to 0. */
-    return 0;
+    return &pVicTable[index];
 }
 void Delay (void)
 {
@@ -397,13 +399,43 @@ void setHDMIChannel(unsigned char Channel)
 
 }
 
+/* Send clear AVMute to HDMI Sink for one time. Not send Clear AVMute and Set AVMute in General Control Packet when display. */
+void HDMI_Clear_AVMute(void)
+{
+    unsigned char temp = 0;
+    temp = readHDMIRegister(X45_VIDEO2);
+    temp = FIELD_SET(temp, X45_VIDEO2, CLR_AVMUTE, EN) |
+           FIELD_SET(temp, X45_VIDEO2, SET_AVMUTE, DIS);
+    writeHDMIRegister(X45_VIDEO2, temp);
+    writeHDMIRegister(X40_CTRL_PKT_EN, 0x80);  // Send General Control Packet once
+
+    /* In display period, Clear AVMute and Set AVMute should not be sent in General Control Packet. */
+    temp = readHDMIRegister(X45_VIDEO2);
+    temp = FIELD_SET(temp, X45_VIDEO2, CLR_AVMUTE, DIS) |
+           FIELD_SET(temp, X45_VIDEO2, SET_AVMUTE, DIS);
+    writeHDMIRegister(X45_VIDEO2, temp);
+    writeHDMIRegister(X40_CTRL_PKT_EN, 0x80); // Send General Control Packet once
+}
+
+/* Before set HDMI IP mode, send AVMute to HDMI Sink in General Control Packet. */
+void HDMI_Set_AVMute(void)
+{
+    unsigned char temp = 0;
+    temp = readHDMIRegister(X45_VIDEO2);
+    temp = FIELD_SET(temp, X45_VIDEO2, CLR_AVMUTE, DIS) |
+           FIELD_SET(temp, X45_VIDEO2, SET_AVMUTE, EN);
+    writeHDMIRegister(X45_VIDEO2, temp);
+    writeHDMIRegister(X40_CTRL_PKT_EN, 0x80); // Send General Control Packet once
+}
+
+
 /*
  *  Function:
  *      enableHdmiI2C
  *
  *  Input:
- *      enable/disable      -   0 = HDMI I2C to GPIO[7:6]
- *                                  -   1 = HW I2C to GPIO[7:6]
+*      enable/disable      -   0 = HDMI I2C to GPIO[9:8]
+*                                  -   1 = HW I2C to GPIO[9:8]
  *
  *  Output:
  *      None
@@ -490,7 +522,7 @@ void HDMI_System_PD (unsigned char mode)
 void HDMI_Init(void)
 {
     unsigned char temp;
-    
+
     // Enable HDMI clock
      ddk768_enableHDMI(1);
     
@@ -500,6 +532,9 @@ void HDMI_Init(void)
     // set INT polarity to Active High
     temp = readHDMIControlRegister();
     writeHDMIControlRegister (temp | 0x01);
+    
+    // Set AVMute to Sink
+    HDMI_Set_AVMute();
     
     // Set to power mode B, in order to read/write to registers
     HDMI_System_PD (PowerMode_B);
@@ -548,6 +583,136 @@ void HDMI_Init(void)
     // writeHDMIRegister (X92_INT_MASK1, 0x80);
 }
 
+
+/*
+ *  Function:
+ *      HDMI_Unplugged
+ *
+ *  Input:
+ *      None
+ *
+ *  Return:
+ *      None
+ *
+ */
+void HDMI_Unplugged (void)
+{
+    unsigned char temp = 0;
+    
+    // disable video & audio output: write 11b to #45h[1:0]
+    temp = readHDMIRegister(X45_VIDEO2);
+    writeHDMIRegister(X45_VIDEO2, (temp | 0x03));
+
+    // audio reset: write 1b to #45h[2], followed by 500us wait time
+    temp = readHDMIRegister(X45_VIDEO2);
+    writeHDMIRegister(X45_VIDEO2, (temp | 0x04));
+    DelayMs(1);
+
+    // PS mode e->d->b->a
+    HDMI_System_PD (PowerMode_D);
+    HDMI_System_PD (PowerMode_B);
+    HDMI_System_PD (PowerMode_A);
+}
+
+/*
+ *  Function:
+ *      HDMI_Audio_Reset
+ *
+ *  Input:
+ *      None
+ *
+ *  Output:
+ *      None
+ *
+ *  Return:
+ *      None
+ *
+ */
+void HDMI_Audio_Reset (void)
+{
+    unsigned char temp = 0;
+    
+    if (PowerMode == PowerMode_E)
+    {
+        // Audio reset/release
+        // Audio is mute after reset of audio is set.
+        // Therefore, set it in the following procedures.
+        //   Audio:  Save value of now => Audio Reset => Audio Active => Set value again
+        temp = readHDMIRegister(X45_VIDEO2);
+        writeHDMIRegister(X45_VIDEO2, temp | 0x06 );   // Reset
+        DelayMs(1);                                    // Followed by 1ms wait time
+        writeHDMIRegister(X45_VIDEO2, temp & 0xFB );   // Reset Release and Audio Mute)
+        DelayMs(1);                                    // Followed by 1ms wait time
+        writeHDMIRegister(X45_VIDEO2, temp );   // Reset Release and Audio Mute)
+    }
+}
+
+/*
+ *  Function:
+ *      HDMI_Audio_Mute
+ *
+ *  Input:
+ *      None
+ *
+ *  Output:
+ *      None
+ *
+ *  Return:
+ *      None
+ *
+ */
+void HDMI_Audio_Mute (void)
+{
+    unsigned char temp = 0;
+    
+    if (PowerMode == PowerMode_E)
+    {
+        // disable audio output: write 1b to #45h[1]
+        temp = readHDMIRegister(X45_VIDEO2);
+        writeHDMIRegister(X45_VIDEO2, (temp | 0x02));
+    }
+
+	 AudioMode = Audio_Mute;
+}
+
+/*
+ *  Function:
+ *      HDMI_Audio_Unmute
+ *
+ *  Input:
+ *      None
+ *
+ *  Output:
+ *      None
+ *
+ *  Return:
+ *      None
+ *
+ */
+void HDMI_Audio_Unmute (void)
+{
+    unsigned char temp = 0;
+    
+    if (PowerMode == PowerMode_E)
+    {
+        // enable audio output: write 0b to #45h[1]
+        temp = readHDMIRegister(X45_VIDEO2);
+        writeHDMIRegister(X45_VIDEO2, (temp & (~0x02)));
+
+        // Audio reset/release
+        // Audio is mute after reset of audio is set.
+        // Therefore, set it in the following procedures.
+        //   Audio:  Save value of now => Audio Reset => Audio Active => Set value again
+        temp = readHDMIRegister(X45_VIDEO2);
+        writeHDMIRegister(X45_VIDEO2, temp | 0x04 );   // Reset
+        DelayMs(1);                                    // Followed by 1ms wait time
+        writeHDMIRegister(X45_VIDEO2, temp & (~0x04) );   // Reset Release and Audio Mute)
+    }
+	AudioMode = Audio_Unmute;
+}
+
+
+
 /*
  *  Function:
  *      HDMI_Control_Packet_Auto_Send
@@ -564,60 +729,6 @@ void HDMI_Control_Packet_Auto_Send (void)
     writeHDMIRegister (X42_AUTO_CHECKSUM, 0x01);    // enable auto checksum
     writeHDMIRegister (X40_CTRL_PKT_EN, 0x00);
 }
-
-void HDMI_Audio_Setting_48000Hz (mode_parameter_t *pModeParam)
-{
-    unsigned long N = 6144, CTS = 0;    // default N value is 6144
-    unsigned char regValue = 0;
-
-    // calculate CTS with recommended N
-    // recommended N value is 5120 for 4K mode
-    if ((pModeParam->horizontal_display_end >= 3840 && pModeParam->horizontal_display_end < 5120) && 
-        (pModeParam->vertical_display_end >= 2160 && pModeParam->vertical_display_end < 2880))
-    {
-        N = 5120;
-    }
-    
-    // CTS = (fTMDS_clock x N) / (128 x fS)
-    CTS = ((pModeParam->pixel_clock / 1000) * N / 128) * 10 / 480;
-
-    // set N and CTS into registers
-    regValue = (unsigned char)((N >> 16) & 0x0F);
-    writeHDMIRegister(X01_N19_16, regValue);
-    regValue = (unsigned char)(N >> 8);
-    writeHDMIRegister(X02_N15_8, regValue);
-    regValue = (unsigned char)N;
-    writeHDMIRegister(X03_N7_0, regValue);
-
-    regValue = (unsigned char)((CTS >> 16) & 0x0F);
-    writeHDMIRegister(X07_CTS_EXT, regValue);
-    regValue = (unsigned char)(CTS >> 8);
-    writeHDMIRegister(X08_CTS_EXT, regValue);
-    regValue = (unsigned char)CTS;
-    writeHDMIRegister(X09_CTS_EXT, regValue);
-
-    // set audio setting registers
-    writeHDMIRegister(X0A_AUDIO_SOURCE, 0x00);      // internal CTS
-    writeHDMIRegister(X0B_AUDIO_SET2, 0x40);
-    writeHDMIRegister(X0C_I2S_MODE, 0x04);      // I2S 2ch (0x3C for 8ch) + I2S
-    //writeHDMIRegister(X0D_DSD_MODE, 0x00);      // DSD audio disabled
-    writeHDMIRegister(X10_I2S_PINMODE, 0x00);      // I2S input pin swap
-    writeHDMIRegister(X11_ASTATUS1, 0x0D);      // Original Fs = 48kHz
-    writeHDMIRegister(X12_ASTATUS2, 0x22);
-    writeHDMIRegister(X13_CAT_CODE, 0x00);
-    writeHDMIRegister(X14_A_SOURCE, 0x02);      // 16 bits word length 
-    
-    regValue = ((readHDMIRegister(X15_AVSET1) & 0x0F) | 0x20);       // set freq 48kHz
-    writeHDMIRegister(X15_AVSET1, regValue);
-
-    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0x9F;
-    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // dounsampling none (bit 6:5 = 00)
-    
-    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0xF7;
-    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // disable SPDIF
-    
-}
-
 
 /*
  *  Function:
@@ -666,7 +777,7 @@ void HDMI_Audio_Setting_44100Hz (mode_parameter_t *pModeParam)
     writeHDMIRegister(X09_CTS_EXT, regValue);
 
     // set audio setting registers
-    writeHDMIRegister(X0A_AUDIO_SOURCE, 0x00);      // internal CTS
+    writeHDMIRegister(X0A_AUDIO_SOURCE, 0x80);      // external CTS
     writeHDMIRegister(X0B_AUDIO_SET2, 0x40);
     writeHDMIRegister(X0C_I2S_MODE, 0x04);      // I2S 2ch (0x3C for 8ch) + I2S
     //writeHDMIRegister(X0D_DSD_MODE, 0x00);      // DSD audio disabled
@@ -674,7 +785,7 @@ void HDMI_Audio_Setting_44100Hz (mode_parameter_t *pModeParam)
     writeHDMIRegister(X11_ASTATUS1, 0x0F);      // Original Fs = 44.1kHz
     writeHDMIRegister(X12_ASTATUS2, 0x22);
     writeHDMIRegister(X13_CAT_CODE, 0x00);
-    writeHDMIRegister(X14_A_SOURCE, 0x02);      // 16 bits word length 
+    writeHDMIRegister(X14_A_SOURCE, 0x51);      // 24 bits word length 
     
     regValue = (readHDMIRegister(X15_AVSET1) & 0x0F);       // set freq 44.1kHz
     writeHDMIRegister(X15_AVSET1, regValue);
@@ -686,6 +797,119 @@ void HDMI_Audio_Setting_44100Hz (mode_parameter_t *pModeParam)
     writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // disable SPDIF
     
 }
+
+
+
+void HDMI_Audio_Setting_48000Hz (mode_parameter_t *pModeParam)
+{
+    unsigned long N = 6144, CTS = 0;    // default N value is 6144
+    unsigned char regValue = 0;
+
+    // calculate CTS with recommended N
+    // recommended N value is 5120 for 4K mode
+    if ((pModeParam->horizontal_display_end >= 3840 && pModeParam->horizontal_display_end < 5120) && 
+        (pModeParam->vertical_display_end >= 2160 && pModeParam->vertical_display_end < 2880))
+    {
+        N = 5120;
+    }
+    
+    // CTS = (fTMDS_clock x N) / (128 x fS)
+    CTS = ((pModeParam->pixel_clock / 1000) * N / 128) * 10 / 480;
+
+    // set N and CTS into registers
+    regValue = (unsigned char)((N >> 16) & 0x0F);
+    writeHDMIRegister(X01_N19_16, regValue);
+    regValue = (unsigned char)(N >> 8);
+    writeHDMIRegister(X02_N15_8, regValue);
+    regValue = (unsigned char)N;
+    writeHDMIRegister(X03_N7_0, regValue);
+
+    regValue = (unsigned char)((CTS >> 16) & 0x0F);
+    writeHDMIRegister(X07_CTS_EXT, regValue);
+    regValue = (unsigned char)(CTS >> 8);
+    writeHDMIRegister(X08_CTS_EXT, regValue);
+    regValue = (unsigned char)CTS;
+    writeHDMIRegister(X09_CTS_EXT, regValue);
+
+    // set audio setting registers
+    writeHDMIRegister(X0A_AUDIO_SOURCE, 0x80);      // external CTS
+    writeHDMIRegister(X0B_AUDIO_SET2, 0x40);
+    writeHDMIRegister(X0C_I2S_MODE, 0x04);      // I2S 2ch (0x3C for 8ch) + I2S
+    //writeHDMIRegister(X0D_DSD_MODE, 0x00);      // DSD audio disabled
+    writeHDMIRegister(X10_I2S_PINMODE, 0x00);      // I2S input pin swap
+    writeHDMIRegister(X11_ASTATUS1, 0x0D);      // Original Fs = 48kHz
+    writeHDMIRegister(X12_ASTATUS2, 0x22);
+    writeHDMIRegister(X13_CAT_CODE, 0x00);
+    writeHDMIRegister(X14_A_SOURCE, 0x51);      // 24 bits word length 
+    
+    regValue = ((readHDMIRegister(X15_AVSET1) & 0x0F) | 0x20);       // set freq 48kHz
+    writeHDMIRegister(X15_AVSET1, regValue);
+
+    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0x9F;
+    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // dounsampling none (bit 6:5 = 00)
+    
+    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0xF7;
+    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // disable SPDIF
+    
+}
+
+
+
+
+void HDMI_Audio_Setting_32000Hz (mode_parameter_t *pModeParam)
+{
+    unsigned long N = 4096, CTS = 0;    // default N value is 4096
+    unsigned char regValue = 0;
+
+    // calculate CTS with recommended N
+    // recommended N value is 5120 for 4K mode
+    if ((pModeParam->horizontal_display_end >= 3840 && pModeParam->horizontal_display_end < 5120) && 
+        (pModeParam->vertical_display_end >= 2160 && pModeParam->vertical_display_end < 2880))
+    {
+        N = 3072;
+    }
+    
+    // CTS = (fTMDS_clock x N) / (128 x fS)
+    CTS = ((pModeParam->pixel_clock / 1000) * N / 128) * 10 / 480;
+
+    // set N and CTS into registers
+    regValue = (unsigned char)((N >> 16) & 0x0F);
+    writeHDMIRegister(X01_N19_16, regValue);
+    regValue = (unsigned char)(N >> 8);
+    writeHDMIRegister(X02_N15_8, regValue);
+    regValue = (unsigned char)N;
+    writeHDMIRegister(X03_N7_0, regValue);
+
+    regValue = (unsigned char)((CTS >> 16) & 0x0F);
+    writeHDMIRegister(X07_CTS_EXT, regValue);
+    regValue = (unsigned char)(CTS >> 8);
+    writeHDMIRegister(X08_CTS_EXT, regValue);
+    regValue = (unsigned char)CTS;
+    writeHDMIRegister(X09_CTS_EXT, regValue);
+
+    // set audio setting registers
+    writeHDMIRegister(X0A_AUDIO_SOURCE, 0x80);      // external CTS
+    writeHDMIRegister(X0B_AUDIO_SET2, 0x40);
+    writeHDMIRegister(X0C_I2S_MODE, 0x04);      // I2S 2ch (0x3C for 8ch) + I2S
+    //writeHDMIRegister(X0D_DSD_MODE, 0x00);      // DSD audio disabled
+    writeHDMIRegister(X10_I2S_PINMODE, 0x00);      // I2S input pin swap
+    writeHDMIRegister(X11_ASTATUS1, 0x0C);      // Original Fs = 32kHz
+    writeHDMIRegister(X12_ASTATUS2, 0x22);
+    writeHDMIRegister(X13_CAT_CODE, 0x00);
+    writeHDMIRegister(X14_A_SOURCE, 0x51);      // 24 bits word length 
+    
+    regValue = (readHDMIRegister(X15_AVSET1) & 0x0F);       // set freq 44.1kHz
+    regValue |= 0x30;                                                               // set freq 32kHz
+    writeHDMIRegister(X15_AVSET1, regValue);
+
+    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0x9F;
+    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // dounsampling none (bit 6:5 = 00)
+    
+    regValue = readHDMIRegister(X0A_AUDIO_SOURCE) & 0xF7;
+    writeHDMIRegister(X0A_AUDIO_SOURCE, regValue);      // disable SPDIF
+    
+}
+
 
 /*
  *  Function:
@@ -867,7 +1091,7 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
     
     unsigned char temp = 0;
     unsigned long ret = 0;
-    
+    hdmi_vic_param_t *PBTable;
     // set mode b
     if (PowerMode != PowerMode_B)
     {
@@ -900,15 +1124,16 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
     }
     else
     {
+        PBTable = FindVicParam(pLogicalMode->x, pLogicalMode->y);
         writeHDMIRegister (X5F_PACKET_INDEX, AVI_INFO_PACKET); 
-        writeHDMIRegister (X67_PACKET_PB4, FindVicParam(pLogicalMode->x, pLogicalMode->y));
+        writeHDMIRegister (X67_PACKET_PB4, PBTable->Vic);
 
 	    /* For un-4k mode, the following registers should be re-write.*/
 	    writeHDMIRegister (X60_PACKET_HB0, 0x82); // HB0
 	    writeHDMIRegister (X61_PACKET_HB1, 0x02); // HB1
 	    writeHDMIRegister (X62_PACKET_HB2, 0x0D); // HB2 
 	    writeHDMIRegister (X64_PACKET_PB1, 0x00); //0x18); // PB1
-	    writeHDMIRegister (X65_PACKET_PB2, 0x00); //0xc8); // PB2
+	    writeHDMIRegister (X65_PACKET_PB2, PBTable->PB2); //0xc8); // PB2
 	    writeHDMIRegister (X66_PACKET_PB3, 0x12); // PB3
 	    writeHDMIRegister (X68_PACKET_PB5, 0x00); // PB5
 	    writeHDMIRegister (X69_PACKET_PB6, 0xe4); // PB6
@@ -922,7 +1147,10 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
     HDMI_Video_Setting(pModeParam, isHDMI);
 
     // set audio param
-    HDMI_Audio_Setting_48000Hz(pModeParam);
+	if (ddk768_getCrystalType())
+    	HDMI_Audio_Setting_48000Hz(pModeParam);
+	else
+		HDMI_Audio_Setting_44100Hz(pModeParam);
     
     // control packet auto send
     HDMI_Control_Packet_Auto_Send();
@@ -952,7 +1180,8 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
 
     // mode d->e: 0x81
     //HDMI_System_PD (PowerMode_E);
-    writeHDMIControlRegister (PowerMode_E);
+    PowerMode = PowerMode_E;
+    writeHDMIControlRegister (PowerMode);
     DelayMs(10);    // wait 10ms
 
     if (AudioMode)
@@ -962,17 +1191,8 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
         temp &= 0xFB;
         writeHDMIRegister(X45_VIDEO2, (temp & 0xFC));
         
-        // Audio reset/release
-        // Audio is mute after reset of audio is set.
-        // Therefore, set it in the following procedures.
-        //   Audio:  Save value of now => Audio Reset => Audio Active => Set value again
-        temp = readHDMIRegister(X45_VIDEO2);
-        writeHDMIRegister(X45_VIDEO2, temp | 0x06 );   // Reset
-        DelayMs(1);                                    // Followed by 1ms wait time
-        writeHDMIRegister(X45_VIDEO2, temp & 0xFB );   // Reset Release and Audio Mute)
-        DelayMs(1);                                    // Followed by 1ms wait time
-        writeHDMIRegister(X45_VIDEO2, temp );
-        
+		HDMI_Audio_Reset();
+
     }
     else
     {
@@ -1060,128 +1280,6 @@ void HDMI_Disable_Output (void)
     // PS mode e->d->b
     HDMI_System_PD (PowerMode_D);
     HDMI_System_PD (PowerMode_B);
-}
-
-/*
- *  Function:
- *      HDMI_Unplugged
- *
- *  Input:
- *      None
- *
- *  Return:
- *      None
- *
- */
-void HDMI_Unplugged (void)
-{
-    unsigned char temp = 0;
-    
-    // disable video & audio output: write 11b to #45h[1:0]
-    temp = readHDMIRegister(X45_VIDEO2);
-    writeHDMIRegister(X45_VIDEO2, (temp | 0x03));
-
-    // PS mode e->d->b->a
-    HDMI_System_PD (PowerMode_D);
-    HDMI_System_PD (PowerMode_B);
-    HDMI_System_PD (PowerMode_A);
-}
-
-/*
- *  Function:
- *      HDMI_Audio_Reset
- *
- *  Input:
- *      None
- *
- *  Output:
- *      None
- *
- *  Return:
- *      None
- *
- */
-void HDMI_Audio_Reset (void)
-{
-    unsigned char temp = 0;
-    
-    if (PowerMode == PowerMode_E)
-    {
-        // Audio reset/release
-        // Audio is mute after reset of audio is set.
-        // Therefore, set it in the following procedures.
-        //   Audio:  Save value of now => Audio Reset => Audio Active => Set value again
-        temp = readHDMIRegister(X45_VIDEO2);
-        writeHDMIRegister(X45_VIDEO2, temp | 0x06 );   // Reset
-        DelayMs(1);                                    // Followed by 1ms wait time
-        writeHDMIRegister(X45_VIDEO2, temp & 0xFB );   // Reset Release and Audio Mute)
-        DelayMs(1);                                    // Followed by 1ms wait time
-        writeHDMIRegister(X45_VIDEO2, temp );   // Reset Release and Audio Mute)
-    }
-}
-
-/*
- *  Function:
- *      HDMI_Audio_Mute
- *
- *  Input:
- *      None
- *
- *  Output:
- *      None
- *
- *  Return:
- *      None
- *
- */
-void HDMI_Audio_Mute (void)
-{
-    unsigned char temp = 0;
-    
-    if (PowerMode == PowerMode_E)
-    {
-        // disable audio output: write 1b to #45h[1]
-        temp = readHDMIRegister(X45_VIDEO2);
-        writeHDMIRegister(X45_VIDEO2, (temp | 0x02));
-    }
-
-	 AudioMode = Audio_Mute;
-}
-
-/*
- *  Function:
- *      HDMI_Audio_Unmute
- *
- *  Input:
- *      None
- *
- *  Output:
- *      None
- *
- *  Return:
- *      None
- *
- */
-void HDMI_Audio_Unmute (void)
-{
-    unsigned char temp = 0;
-    
-    if (PowerMode == PowerMode_E)
-    {
-        // enable audio output: write 0b to #45h[1]
-        temp = readHDMIRegister(X45_VIDEO2);
-        writeHDMIRegister(X45_VIDEO2, (temp & (~0x02)));
-
-        // Audio reset/release
-        // Audio is mute after reset of audio is set.
-        // Therefore, set it in the following procedures.
-        //   Audio:  Save value of now => Audio Reset => Audio Active => Set value again
-        temp = readHDMIRegister(X45_VIDEO2);
-        writeHDMIRegister(X45_VIDEO2, temp | 0x04 );   // Reset
-        DelayMs(1);                                    // Followed by 1ms wait time
-        writeHDMIRegister(X45_VIDEO2, temp & (~0x04) );   // Reset Release and Audio Mute)
-    }
-	AudioMode = Audio_Unmute;
 }
 
 

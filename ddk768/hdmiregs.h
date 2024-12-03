@@ -933,13 +933,131 @@
 //  #define     GAMUT_PB26              252     //  RW  00h     gamut metadata PB26
 //  #define     GAMUT_PB27              253     //  RW  00h     gamut metadata PB27
 //  #define     TEST_MODE               254     //  RW  00h     test mode register
-//    #define     XFF_IP_COM_CONTROL              255             //  R/W                                         40h     I/P conversion control
-//        #define     IP_CONV_PIX_REP                     0x01    //          R/W                                     0b  I/P conversion control
-//        #define     IP_CONV_EN                          0x02    //          R/W                                     0b  I/P conversion mode control
-//        #define     PRE_COLOR_CONV_ON                   0x10    //          R/W                                     0b  Pre-color space converter (RGB->YCbCr) control
-//        #define     PRE_DOWN_CONV_ON                    0x20    //          R/W                                     0b  Pre-pixel encoding converter (down sampler) control
-//        #define     STGAM_OFF                           0x40    //          R/W                                     1b  Gamma correction control
-//        #define     IP_REG_OFFSET                       0x80    //          R/W                                     0b  I/P conversion control register access control
+    #define     XFF_IP_COM_CONTROL              255             //  R/W                                         40h     I/P conversion control
+        #define     IP_CONV_PIX_REP                     0x01    //          R/W                                     0b  I/P conversion control
+        #define     IP_CONV_EN                          0x02    //          R/W                                     0b  I/P conversion mode control
+        #define     PRE_COLOR_CONV_ON                   0x10    //          R/W                                     0b  Pre-color space converter (RGB->YCbCr) control
+        #define     PRE_DOWN_CONV_ON                    0x20    //          R/W                                     0b  Pre-pixel encoding converter (down sampler) control
+        #define     STGAM_OFF                           0x40    //          R/W                                     1b  Gamma correction control
+        #define     IP_REG_OFFSET                       0x80    //          R/W                                     0b  I/P conversion control register access control
+
+
+// SLISHDMI13T I/P conversion registers Defintions
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------
+// SLISHDMI13R  Regsiter Defines                Addr    bit         RW                                          init    Description
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------
+    #define     FILM_DETECTION_SETTING_1        0x07            //  R/W                                         FFh
+    #define     FILM_DETECTION_SETTING_2        0x08            //  R/W                                         08h
+    #define     FILM_DETECTION_SETTING_3        0x09            //  R/W                                         4Ch
+    #define     FILM_DETECTION_SETTING_4        0x0A            //  R/W                                         C2h
+    #define     FILM_DETECTION_SETTING_5        0x0B            //  R/W                                         48h
+    #define     FILM_DETECTION_SETTING_6        0x0C            //  R/W                                         02h
+    #define     FILM_DETECTION_SETTING_7        0x0D            //  R/W                                         61h
+    #define     FILM_DETECTION_SETTING_8        0x0E            //  R/W                                         2Dh
+    #define     FILM_DETECTION_SETTING_9        0x0F            //  R/W                                         00h
+    #define     HORIZONTAL_PIXEL_START_POSITION_TO_LINE_MEMORY_LSB      0x10        //  R/W                     AEh
+    #define     HORIZONTAL_PIXEL_START_POSITION_TO_LINE_MEMORY_MSB      0x11        //  R/W                     00h
+    #define     HORIZONTAL_PIXEL_COUNT_TO_LINE_MEMORY_LSB               0x12        //  R/W                     84h
+    #define     HORIZONTAL_PIXEL_COUNT_TO_LINE_MEMORY_MSB               0x13        //  R/W                     07h
+    #define     VERTICAL_PIXEL_START_POSITION_TO_LINE_MEMORY_LSB        0x14        //  R/W                     12h
+    #define     VERTICAL_PIXEL_START_POSITION_TO_LINE_MEMORY_MSB        0x15        //  R/W                     00h
+    #define     VERTICAL_PIXEL_COUNT_TO_LINE_MEMORY_LSB                 0x16        //  R/W                     1Ch
+    #define     VERTICAL_PIXEL_COUNT_TO_LINE_MEMORY_MSB                 0x17        //  R/W                     02h
+    #define     OUTPUT_HSYNC_POSITION_LSB       0x18            //  R/W                                         C5h
+    #define     OUTPUT_HSYNC_POSITION_MSB       0x19            //  R/W                                         00h
+    #define     OUTPUT_HSYNC_WIDTH              0x1A            //  R/W                                         2Ch
+    #define     OUTPUT_VSYNC_POSITION_LSB       0x1B            //  R/W                                         02h
+    #define     OUTPUT_VSYNC_POSITION_MSB       0x1C            //  R/W                                         00h
+    #define     OUTPUT_VSYNC_WIDTH              0x1D            //  R/W                                         05h
+    #define     Y_LEVEL_ON_OUT_OF_VALID_SCREEN  0x1E            //  R/W                                         10h
+    #define     C_LEVEL_ON_OUT_OF_VALID_SCREEN  0x1F            //  R/W                                         80h
+    #define     INTERNAL_VERTICAL_RESET_POSITION_ADJUSTMENT_LSB 0x20    //  RW                                  00h
+    #define     INTERNAL_VERTICAL_RESET_POSITION_ADJUSTMENT_MSB 0x21    //  RW                                  00h
+    #define     FUNCTION_MODE_SETTINGS          0x22            //  R/W                                         00h
+        #define     INTER_OFF                           0x01    //          R/W                                     0b   Delay select for I/P conversion
+        #define     VLPF_CTR                            0x02    //          R/W                                     0b   Vertical filter select
+        #define     INTERADPT                           0x04    //          R/W                                     0b   Interpolation select between frames
+//  #define     Motion detection setting.2 (#24h)
+//  #define     Motion detection setting.3 (#25h)
+//  #define     Motion detection setting.4 (#26h)
+//  #define     Diagonal edge detect setting.1 (#27h)
+//  #define     Diagonal edge detect setting.2 (#28h)
+//  #define     Diagonal edge detect setting.3 (#29h)
+//  #define     Diagonal edge detect setting.4 (#2Ah)
+    #define     VIDEO_PARAMETER_SETTINGS_AFTER  0x30            //  R/W                                         00h
+    #define     HORIZONTAL_TOTAL_AFTER_LSB      0x31            //  R/W                                         00h
+    #define     HORIZONTAL_TOTAL_AFTER_MSB      0x32            //  R/W                                         00h
+    #define     HORIZONTAL_BLANK_AFTER_LSB      0x33            //  R/W                                         00h
+    #define     HORIZONTAL_BLANK_AFTER_MSB      0x34            //  R/W                                         00h
+    #define     HORIZONTAL_DELAY_AFTER_LSB      0x35            //  R/W                                         00h
+    #define     HORIZONTAL_DELAY_AFTER_MSB      0x36            //  R/W                                         00h
+    #define     HORIZONTAL_DURATION_AFTER_LSB   0x37            //  R/W                                         00h
+    #define     HORIZONTAL_DURATION_AFTER_MSB   0x38            //  R/W                                         00h
+    #define     VERTICAL_TOTAL_AFTER_LSB        0x39            //  R/W                                         00h
+    #define     VERTICAL_TOTAL_AFTER_MSB        0x3A            //  R/W                                         00h
+    #define     OUTPUT_VIDEO_FORMAT_VID_AFTER   0x3C            //  R/W                                         00h
+    #define     VERTICAL_BLANK_AFTER            0x3D            //  R/W                                         00h
+    #define     VERTICAL_DELAY_AFTER            0x3E            //  R/W                                         00h
+    #define     VERTICAL_DURATION_AFTER         0x3F            //  R/W                                         00h
+//  #define     GAMMA_CORRECTION_1              0x40            //  R/W                                         00h
+//  #define     GAMMA_CORRECTION_97             0xA0            //  R/W                                         00h
+//  #define     Pre-Color space conversion parameters (#B0h)
+//  #define     Pre-Color space conversion parameters (#B1h)
+//  #define     Pre-Color space conversion parameters (#B2h)
+//  #define     Pre-Color space conversion parameters (#B3h)
+//  #define     Pre-Color space conversion parameters (#B4h)
+//  #define     Pre-Color space conversion parameters (#B5h)
+//  #define     Pre-Color space conversion parameters (#B6h)
+//  #define     Pre-Color space conversion parameters (#B7h)
+//  #define     Pre-Color space conversion parameters (#B8h)
+//  #define     Pre-Color space conversion parameters (#B9h)
+//  #define     Pre-Color space conversion parameters (#BAh)
+//  #define     Pre-Color space conversion parameters (#BBh)
+//  #define     Pre-Color space conversion parameters (#BCh)
+//  #define     Pre-Color space conversion parameters (#BDh)
+//  #define     Pre-Color space conversion parameters (#BEh)
+//  #define     Pre-Color space conversion parameters (#BFh)
+//  #define     Pre-Color space conversion parameters (#C0h)
+//  #define     Pre-Color space conversion parameters (#C1h)
+//  #define     Pre-Color space conversion parameters (#C2h)
+//  #define     Pre-Color space conversion parameters (#C3h)
+//  #define     Pre-Color space conversion parameters (#C4h)
+//  #define     Pre-Color space conversion parameters (#C5h)
+//  #define     Pre-Color space conversion parameters (#C6h)
+//  #define     Pre-Color space conversion parameters (#C7h)
+    #define     DE_HORIZONTAL_START_POSITION_LSB    0xD0        //  R/W                                         C0h
+    #define     DE_HORIZONTAL_START_POSITION_MSB    0xD1        //  R/W                                         00h
+    #define     DE_HORIZONTAL_END_POSITION_LSB  0xD2            //  R/W                                         60h
+    #define     DE_HORIZONTAL_END_POSITION_MSB  0xD3            //  R/W                                         08h
+    #define     DE_VERTICAL_START_POSITION_LSB  0xD4            //  R/W                                         29h
+    #define     DE_VERTICAL_START_POSITION_MSB  0xD5            //  R/W                                         00h
+    #define     DE_VERTICAL_END_POSITION_LSB    0xD6            //  R/W                                         61h
+    #define     DE_VERTICAL_END_POSITION_MSB    0xD7            //  R/W                                         04h
+//  #define     RECEIVED_N_DATA_FOR_DDR_TEST    0xD9            //  R/W                                         00h
+//  #define     RECEIVED_N_DATA_FOR_DDR_TEST    0xDC            //  R/W                                         00h
+//  #define     DDR controller PLL configuratiuon.1 (#E0h)
+//  #define     DDR controller PLL configuratiuon.2 (#E1h)
+//  #define     DDR controller PLL configuratiuon.3 (#E2h)
+//  #define     DDR controller DQS0 delay control (#E3h)
+//  #define     DDR controller DQS1 delay control (#E4h)
+//  #define     DDR controller DQS2 delay control (#E5h)
+//  #define     DDR controller DQS3 delay control (#E6h)
+//  #define     DDR controller DQ0-7 delay control (#E7h)
+//  #define     DDR controller DQ8-15 delay control (#E8h)
+//  #define     DDR controller DQ16-23 delay control (#E9h)
+//  #define     DDR controller DQ24-31 delay control (#EAh)
+//  #define     DDR controller DQN0-7 delay control (#EBh)
+//  #define     DDR controller DQN8-15 delay control (#ECh)
+//  #define     DDR controller DQN16-23 delay control (#EDh)
+//  #define     DDR controller DQN24-31 delay control (#EEh)
+//  #define     DDR_TEST_ MODE                  0xF0            //  R/W                                         00h
+//  #define     SEND_DATA_FOR_DDR_TEST          0xF1            //  R/W                                         00h
+//  #define     SEND_DATA_FOR_DDR_TEST          0xF4            //  R/W                                         00h
+//  #define     COMPARISON_DATA_FOR_DDR_TEST    0xF5            //  R/W                                         00h
+//  #define     COMPARISON_DATA_FOR_DDR_TEST    0xF8            //  R/W                                         00h
+//  #define     RECEIVED_P_DATA_FOR_DDR_TEST    0xF9            //  R/W                                         00h
+//  #define     RECEIVED_P_DATA_FOR_DDR_TES     0xFC            //  R/W                                         00h
+//  #define     DDR_CONTROLLER_INTERNAL_ERROR_STATUS    0xFD    //  R/W                                         00h
 
 
 #endif  /* _HDMIREGS_H_ */
