@@ -5,7 +5,9 @@
 #include <linux/console.h>
 #include <linux/module.h>
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+#include <drm/drm_fbdev_shmem.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
 #include <drm/drm_fbdev_generic.h>
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
@@ -190,7 +192,11 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 #else
 	if ((sdev->specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || sdev->specId == SPC_SM768)
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+		drm_fbdev_shmem_setup(dev, dev->mode_config.preferred_depth);
+#else
 		drm_fbdev_generic_setup(dev, dev->mode_config.preferred_depth);
+#endif
 #endif
 
 
