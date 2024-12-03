@@ -62,6 +62,7 @@ int smi_debug = 0;
 int lcd_scale = 0;
 int pwm_ctrl = 0;
 int clk_phase = -1;
+int use_vblank = 0;
 
 module_param(smi_pat, int, S_IWUSR | S_IRUSR);
 
@@ -94,6 +95,8 @@ MODULE_PARM_DESC(pwm, "PWM Value, 0 = disable (default:0) bit 0-3: PWM 0/1/2 bit
 module_param_named(pwm, pwm_ctrl, int, 0400);
 MODULE_PARM_DESC(clkphase, "Panel Mode Clock phase, -1 = Use Mode table (Default)  0 = Negative 1 = Postive");
 module_param_named(clkphase, clk_phase, int, 0400);
+MODULE_PARM_DESC(vblank, "Disable/Enable hw vblank support");
+module_param_named(vblank, use_vblank, int, 0400);
 
 
 
@@ -598,14 +601,12 @@ static struct drm_driver driver = {
 static int __init smi_init(void)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0)
-        if (drm_firmware_drivers_only() && smi_modeset == -1)
+        if (drm_firmware_drivers_only() || !smi_modeset)
 #else
-        if (vgacon_text_force() && smi_modeset == -1)
+        if (vgacon_text_force() || !smi_modeset)
 #endif
-		return -EINVAL;
+		return -ENODEV;
 
-	if (smi_modeset == 0)
-		return -EINVAL;
 	return pci_register_driver(&smi_pci_driver);
 }
 
