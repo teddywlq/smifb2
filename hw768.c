@@ -459,7 +459,8 @@ void hw768_load_lut(disp_control_t dispCtrl, int size, u8 lut_r[], u8 lut_g[], u
 
 long hw768_AdaptI2CInit(struct smi_connector *smi_connector)
 {
-    if(hwi2c_en)
+#if 0
+	if(hwi2c_en)
     {
         smi_connector->i2c_hw_enabled = 1;
     }
@@ -476,6 +477,21 @@ long hw768_AdaptI2CInit(struct smi_connector *smi_connector)
     {
         return ddk768_AdaptSWI2CInit(smi_connector); 
     }
+#endif
+	struct drm_connector *connector = &smi_connector->base;
+    switch(connector->connector_type){
+	case DRM_MODE_CONNECTOR_DVII:
+	case DRM_MODE_CONNECTOR_VGA:
+	    if(hwi2c_en){
+			return ddk768_AdaptHWI2CInit(smi_connector);
+		}
+		break;
+	case DRM_MODE_CONNECTOR_HDMIA:
+		break;
+
+   }
+	return ddk768_AdaptSWI2CInit(smi_connector); 
+
 }
 
 

@@ -37,7 +37,7 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20240921"
+#define DRIVER_DATE		"20240923"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		4
@@ -91,6 +91,7 @@ extern int swcur_en;
 extern int edid_mode;
 extern int lcd_scale;
 extern int pwm_ctrl;
+extern int use_vblank;
 
 struct smi_750_register;
 struct smi_768_register;
