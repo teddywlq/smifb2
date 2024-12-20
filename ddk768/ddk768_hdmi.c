@@ -100,7 +100,7 @@ void Delay (void)
 
 void DelayMs (BYTE millisecond)
 {
-	mdelay(millisecond);
+	usleep_range(millisecond * 1000 , millisecond * 1100);
 }
 
 //-----------------------------------------------------------------------------
