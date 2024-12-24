@@ -10,8 +10,8 @@
 
 typedef enum _spolarity_t
 {
+	NEG, /* negative */
     POS, /* positive */
-    NEG, /* negative */
 }
 spolarity_t;
 
