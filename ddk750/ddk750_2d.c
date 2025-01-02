@@ -313,7 +313,7 @@ unsigned long ulColor)    /* Color to compare. */
  * It returns a double word with the transparent fields properly set,
  * while other fields are 0.
  */
-unsigned long deGetTransparency(void)
+static unsigned long deGetTransparency(void)
 {
     unsigned long de_ctrl;
 
@@ -330,7 +330,7 @@ unsigned long deGetTransparency(void)
 /*
  * This function sets the pixel format that will apply to the 2D Engine.
  */
-void deSetPixelFormat(
+static void deSetPixelFormat(
     unsigned long bpp
 )
 {
@@ -1652,7 +1652,7 @@ unsigned long rop2)       /* ROP value */
  * to simplify the deRotateBlt function.
  *
  */
-void deRotate(
+static void deRotate(
     unsigned long sx,               /* X Coordinate of the source */
     unsigned long sy,               /* Y Coordinate of the source */
     unsigned long dx,               /* X Coordinate of the destination */
@@ -2805,7 +2805,7 @@ long deVideoMem2VideoMemAlphaBlendBlt(
 /*
  * This function sets the monochrome pattern on the pattern registers.
  */
-void deSetPattern(
+__attribute__((unused)) static void deSetPattern(
     unsigned long monoPatternLow,
     unsigned long monoPatternHigh
 )
@@ -2818,7 +2818,7 @@ void deSetPattern(
  * This function uses 2D engine to fill a rectangular area with a specific pattern.
  * The filled area includes the starting points.
  */
-long deRectPatternFill(
+__attribute__((unused)) static long deRectPatternFill(
     unsigned long dBase,  /* Base address of destination surface counted from beginning of video frame buffer */
     unsigned long dPitch, /* Pitch value of destination surface in BYTES */
     unsigned long bpp,    /* Color depth of destination surface: 8, 16 or 32 */

@@ -17,9 +17,10 @@
 #include "ddk768/ddk768_swi2c.h"
 #include "ddk768/ddk768_hwi2c.h"
 
+#include <linux/delay.h>
 
 #include "smi_ver.h"
-
+#include "hw768.h"
 
 extern int lcd_scale;
 extern int pwm_ctrl;
@@ -33,7 +34,7 @@ struct smi_768_register{
 };
 
 
-mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mode)
+static mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mode)
 {
 	mode_parameter_t modeP;
 
@@ -56,7 +57,7 @@ mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mode)
     modeP.vertical_frequency = 0;
     
     /* Clock Phase. This clock phase only applies to Panel. */
-    modeP.clock_phase_polarity = POS;
+    modeP.clock_phase_polarity = NEG;
 
 	return modeP;
 }
@@ -259,17 +260,6 @@ int hw768_en_dis_interrupt(int status)
 	}
 
 #endif
-
-void hw768_HDMI_Enable_Output(void)
-{
-	HDMI_Enable_Output();
-}
-
-void hw768_HDMI_Disable_Output(void)
-{
-	HDMI_Disable_Output();
-}
-
 
 int hw768_get_hdmi_edid(unsigned char *pEDIDBuffer)
 {

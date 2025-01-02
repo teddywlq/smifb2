@@ -164,7 +164,7 @@ void ddk768_hwI2CClose(
  *       0   - Transfer is completed
  *      -1   - Tranfer is not successful (timeout)
  */
-long ddk768_hwI2CWaitTXDone(
+static long ddk768_hwI2CWaitTXDone(
     unsigned char i2cNumber //I2C0 or I2C1
 )
 {

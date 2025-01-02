@@ -1,14 +1,9 @@
 #include "ddk768_reg.h"
-
-
 #include "ddk768_chip.h"
 #include "ddk768_power.h"
 #include "ddk768_display.h"
 #include "ddk768_timer.h"
-
 #include "ddk768_help.h"
-
-
 
 /* Monitor Detection RGB Default Threshold values */
 #define DEFAULT_MON_DETECTION_THRESHOLD         0x64
@@ -223,7 +218,7 @@ void ddk768_waitVSyncLine(disp_control_t dispControl)
 /*
  * Get current display line number
  */
-unsigned long getDisplayLine(disp_control_t dispControl)
+__attribute__((unused)) static unsigned long getDisplayLine(disp_control_t dispControl)
 {
     unsigned long ulRegAddr;
     unsigned long ulRegValue;
@@ -390,7 +385,7 @@ void ddk768_setDisplayEnable(
  *
  */
 
-void setDataDirection(
+__attribute__((unused)) static void setDataDirection(
    disp_control_t dispControl, /* Channel 0 or Channel 1) */
    disp_state_t dispState      /* ON or OFF */
 )

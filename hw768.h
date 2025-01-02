@@ -115,9 +115,9 @@ void ddk768_enableCursor(
     unsigned long enable
 );
 
-void hw768_HDMI_Enable_Output(void);
+void HDMI_Enable_Output(void);
 
-void hw768_HDMI_Disable_Output(void);
+void HDMI_Disable_Output(void);
 
  
 long ddk768_setMode(
@@ -131,7 +131,7 @@ void setDisplayDPMS(
    DISP_DPMS_t state /* DPMS state */
    );
 
-void hw768_init_hdmi(void);
+void HDMI_Init(void);
 int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mode, bool isHDMI);
 
 

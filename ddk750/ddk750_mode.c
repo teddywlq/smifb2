@@ -1,4 +1,3 @@
-//#include <string.h>
 #include "ddk750_defs.h"
 #include "ddk750_chip.h"
 #include "ddk750_clock.h"
@@ -7,10 +6,6 @@
 #include "ddk750_power.h"
 #include "ddk750_mode.h"
 #include "ddk750_help.h"
-
-//#include "ddk750_os.h"
-
-//#include "ddkdebug.h"
 
 #define SCALE_CONSTANT                      (1 << 12)
 
@@ -380,7 +375,7 @@ unsigned long getStockModeParamTableSize(void)
 /* 
  *  getStockModeParamTableEx
  *      This function gets the mode parameters table associated to the
- *      display control (PRIMARY_CTRL or SECONDAR_CTRL).
+ *      display control (CHANNEL0_CTRL or SECONDAR_CTRL).
  *
  *  Input:
  *      dispCtrl    - Display Control of the mode table that is associated to.
@@ -395,7 +390,7 @@ mode_parameter_t *getStockModeParamTableEx(
     mode_parameter_t *pModeTable;
     pModeTable = getStockModeParamTable();
 #if 0 
-    if (dispCtrl == PRIMARY_CTRL)
+    if (dispCtrl == CHANNEL0_CTRL)
         pModeTable = (mode_parameter_t *)&gPrimaryModeParamTable[getCurrentDevice()];
     else
         pModeTable = (mode_parameter_t *)&gSecondaryModeParamTable[getCurrentDevice()];
@@ -454,7 +449,7 @@ mode_parameter_t getCurrentModeParam(
     disp_control_t dispCtrl
 )
 {
-    if (dispCtrl == PRIMARY_CTRL)
+    if (dispCtrl == CHANNEL0_CTRL)
         return gPrimaryCurrentModeParam[getCurrentDevice()];
     else
         return gSecondaryCurrentModeParam[getCurrentDevice()];
@@ -472,7 +467,7 @@ mode_parameter_t getCurrentModeParam(
  *  Output:
  *      1) Fill up input structure mode_parameter_t with possible timing for SM750.
  */
-long adjustModeParam(
+static long adjustModeParam(
 mode_parameter_t *pModeParam,/* Pointer to mode parameter */
 mode_parameter_t *pMode,     /* Pointer to mode parameter to be updated here */
 unsigned long ulPClk         /* real pixel clock feasible by SM750 */
@@ -571,12 +566,12 @@ long isCurrentDisplayPending(
 )
 {
     /* Get the display status */
-    if (dispControl == PRIMARY_CTRL)
+    if (dispControl == CHANNEL0_CTRL)
     {
         if (FIELD_VAL_GET(peekRegisterDWord(PRIMARY_FB_ADDRESS), PRIMARY_FB_ADDRESS, STATUS) == PRIMARY_FB_ADDRESS_STATUS_PENDING)
             return 0;
     }
-	else if (dispControl == SECONDARY_CTRL)
+	else if (dispControl == CHANNEL1_CTRL)
     {
         if (FIELD_VAL_GET(peekRegisterDWord(SECONDARY_FB_ADDRESS), SECONDARY_FB_ADDRESS, STATUS) == SECONDARY_FB_ADDRESS_STATUS_PENDING)
             return 0;
@@ -597,7 +592,7 @@ void setDisplayBaseAddress(
 	unsigned long ulBaseAddress
 )
 {
-	if (dispControl == PRIMARY_CTRL)
+	if (dispControl == CHANNEL0_CTRL)
 	{
 		/* Frame buffer base for this mode */
 	    pokeRegisterDWord(PRIMARY_FB_ADDRESS,
@@ -605,7 +600,7 @@ void setDisplayBaseAddress(
             | FIELD_SET(0, PRIMARY_FB_ADDRESS, EXT, LOCAL)
             | FIELD_VALUE(0, PRIMARY_FB_ADDRESS, ADDRESS, ulBaseAddress));
 	}
-	else if (dispControl == SECONDARY_CTRL)
+	else if (dispControl == CHANNEL1_CTRL)
 	{
         /* Frame buffer base for this mode */
         pokeRegisterDWord(SECONDARY_FB_ADDRESS,
@@ -619,7 +614,7 @@ void setDisplayBaseAddress(
 /* 
  * Program the hardware for a specific video mode
  */
-void programModeRegisters(
+static void programModeRegisters(
 mode_parameter_t *pModeParam,   /* mode information about pixel clock, horizontal total, etc. */
 unsigned long ulBpp,            /* Color depth for this mode */
 unsigned long ulBaseAddress,    /* Offset in frame buffer */
@@ -644,7 +639,7 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
         pokeRegisterDWord(SECONDARY_PLL_CTRL, formatPllReg(pPLL)); 
 
         /* Frame buffer base for this mode */
-        //setDisplayBaseAddress(SECONDARY_CTRL, ulBaseAddress);//move by ilena
+        //setDisplayBaseAddress(CHANNEL1_CTRL, ulBaseAddress);//move by ilena
 
         /* Pitch value (Sometime, hardware people calls it Offset) */
        // pokeRegisterDWord(SECONDARY_FB_WIDTH,
@@ -725,7 +720,7 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
         }
         
         /* Frame buffer base for this mode */
-		//setDisplayBaseAddress(PRIMARY_CTRL, ulBaseAddress);// move by iena
+		//setDisplayBaseAddress(CHANNEL0_CTRL, ulBaseAddress);// move by iena
 		//printk("func[%s], primary reg, ulPitch=[%d]\n", __func__, ulPitch);
         /* Pitch value (Sometime, hardware people calls it Offset) */
         //pokeRegisterDWord(PRIMARY_FB_WIDTH,
@@ -888,17 +883,17 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
  * This function gets the available clock type
  *
  */
-clock_type_t getClockType(disp_control_t dispCtrl)
+static clock_type_t getClockType(disp_control_t dispCtrl)
 {
     clock_type_t clockType;
 
     switch (dispCtrl)
     {
-        case PRIMARY_CTRL:
+        case CHANNEL0_CTRL:
             clockType = PRIMARY_PLL;
             break;
         default:
-        case SECONDARY_CTRL:
+        case CHANNEL1_CTRL:
             clockType = SECONDARY_PLL;
             break;
     }
@@ -1072,15 +1067,15 @@ long setModeEx(
     userData_t *pUserData;
     
     /* Conditions to set the mode when scaling is needed (xLCD and yLCD is not zeroes)
-     *      1. PRIMARY_CTRL
+     *      1. CHANNEL0_CTRL
      *          a. Set the primary display control timing to the actual display mode.
      *          b. Set the secondary display control timing to the mode that equals to
      *             the panel size.
-     *      2. SECONDARY_CTRL
+     *      2. CHANNEL1_CTRL
      *          a. Set the secondary display control timing to the mode that equals to
      *             the panel size.
      */
-    if ((pLogicalMode->dispCtrl == SECONDARY_CTRL) &&
+    if ((pLogicalMode->dispCtrl == CHANNEL1_CTRL) &&
         (pLogicalMode->xLCD != 0) && (pLogicalMode->yLCD != 0))
     {
         modeWidth = pLogicalMode->xLCD;

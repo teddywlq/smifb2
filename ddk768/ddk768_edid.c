@@ -3,7 +3,6 @@
 #include "ddk768_hwi2c.h"
 #include "ddk768_swi2c.h"
 #include "ddk768_edid.h"
-
 #include "ddkdebug.h"
 
 
@@ -119,7 +118,7 @@ static void printVdif(
  *  Output:
  *      0 get header success; -1 fail.
  */
-unsigned char edidGetHeader(
+__attribute__((unused)) static unsigned char edidGetHeader(
     unsigned char *pEDIDBuffer
 )
 {

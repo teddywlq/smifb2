@@ -1,4 +1,5 @@
 #include "ddkdebug.h"
+#include "ddk768_helper.h"
 
 /* A test counter to be shared by all modules */
 static unsigned long gTestCounter;
@@ -43,7 +44,7 @@ unsigned long ddk768_roundedDiv(unsigned long num, unsigned long denom)
  * For example, if the result is 4.5, this function returns 5.
  * If the result is 4.4, this function returns 4.
  */
-unsigned long ulRoundedDiv(unsigned long num, unsigned long denom)
+__attribute__((unused)) static unsigned long ulRoundedDiv(unsigned long num, unsigned long denom)
 {
     return ddk768_roundedDiv(num, denom);
 }

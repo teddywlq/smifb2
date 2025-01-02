@@ -196,7 +196,7 @@ static unsigned char swI2CReadSDA(unsigned char i2cDataGPIO)
  *      signal because the i2c will fail when other device try to drive the
  *      signal due to SM50x will drive the signal to always high.
  */
-void ddk768_swI2CSDA(unsigned char value)
+static void ddk768_swI2CSDA(unsigned char value)
 {
     unsigned long ulGPIOData;
     unsigned long ulGPIODirection;
@@ -234,7 +234,7 @@ void ddk768_swI2CSDA(unsigned char value)
  *      signal because the i2c will fail when other device try to drive the
  *      signal due to SM50x will drive the signal to always high.
  */
-void ddk768_swI2CSCL(unsigned char value)
+static void ddk768_swI2CSCL(unsigned char value)
 {
     unsigned long ulGPIOData;
     unsigned long ulGPIODirection;
@@ -295,7 +295,7 @@ static void swI2CAck(unsigned char ack)
 /*
  *  This function sends the start command to the slave device
  */
-void ddk768_swI2CStart(void)
+static void ddk768_swI2CStart(void)
 {
     /* Start I2C */
     swI2CSDA(1, g_i2cDataGPIO);
@@ -306,7 +306,7 @@ void ddk768_swI2CStart(void)
 /*
  *  This function sends the stop command to the slave device
  */
-void ddk768_swI2CStop(void)
+static void ddk768_swI2CStop(void)
 {
     /* Stop the I2C */
     swI2CSCL(1, g_i2cClockGPIO);
@@ -314,7 +314,7 @@ void ddk768_swI2CStop(void)
     swI2CSDA(1, g_i2cDataGPIO);
 }
 
-void ddk768_swI2CClean(void)
+__attribute__((unused)) static void ddk768_swI2CClean(void)
 {
     swI2CSCL(0, g_i2cClockGPIO);
     swI2CWait();
@@ -332,7 +332,7 @@ void ddk768_swI2CClean(void)
  *       0   - Success
  *      -1   - Fail to write byte
  */
-long ddk768_swI2CWriteByte(unsigned char data) 
+static long ddk768_swI2CWriteByte(unsigned char data) 
 {
     unsigned char value = data;
     int i;
@@ -392,7 +392,7 @@ long ddk768_swI2CWriteByte(unsigned char data)
 
 #pragma GCC pop_options
 
-long ddk768_swI2CSetGPIO(
+static long ddk768_swI2CSetGPIO(
     unsigned char i2cClkGPIO,
     unsigned char i2cDataGPIO)
 {
@@ -631,7 +631,7 @@ long ddk768_swI2CWriteReg(
 }
 
 
-unsigned char ddk768_swI2CReadByte(unsigned char ack)
+static unsigned char ddk768_swI2CReadByte(unsigned char ack)
 {
     int i;
     unsigned char data = 0;

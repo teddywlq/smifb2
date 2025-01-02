@@ -74,7 +74,7 @@ BYTE gEdidBuffer[256] = {0};
 
 
 /* Find mode VIC parameer from the table according to Width & Height*/
-hdmi_vic_param_t *FindVicParam(unsigned long Width, unsigned long Height)
+static hdmi_vic_param_t *FindVicParam(unsigned long Width, unsigned long Height)
 {
     unsigned char index = 0;
     hdmi_vic_param_t * pVicTable = gHdmiVICParamTable;
@@ -116,7 +116,7 @@ hdmi_interrupt_t;
 static hdmi_interrupt_t *g_pHdmiIntHandlers = ((hdmi_interrupt_t *)0);
 
 /* HDMI Interrupt Service Routine */
-void hdmiISR(
+__attribute__((unused)) static void hdmiISR(
     unsigned long status
 )
 {
@@ -400,7 +400,7 @@ void setHDMIChannel(unsigned char Channel)
 }
 
 /* Send clear AVMute to HDMI Sink for one time. Not send Clear AVMute and Set AVMute in General Control Packet when display. */
-void HDMI_Clear_AVMute(void)
+__attribute__((unused)) static void HDMI_Clear_AVMute(void)
 {
     unsigned char temp = 0;
     temp = readHDMIRegister(X45_VIDEO2);
@@ -418,7 +418,7 @@ void HDMI_Clear_AVMute(void)
 }
 
 /* Before set HDMI IP mode, send AVMute to HDMI Sink in General Control Packet. */
-void HDMI_Set_AVMute(void)
+static void HDMI_Set_AVMute(void)
 {
     unsigned char temp = 0;
     temp = readHDMIRegister(X45_VIDEO2);
@@ -724,7 +724,7 @@ void HDMI_Audio_Unmute (void)
  *      None
  *
  */
-void HDMI_Control_Packet_Auto_Send (void)
+static void HDMI_Control_Packet_Auto_Send(void)
 {
     writeHDMIRegister (X42_AUTO_CHECKSUM, 0x01);    // enable auto checksum
     writeHDMIRegister (X40_CTRL_PKT_EN, 0x00);
@@ -744,7 +744,7 @@ void HDMI_Control_Packet_Auto_Send (void)
  *      None
  *
  */
-void HDMI_Audio_Setting_44100Hz (mode_parameter_t *pModeParam)
+static void HDMI_Audio_Setting_44100Hz(mode_parameter_t *pModeParam)
 {
     unsigned long N = 6272, CTS = 0;    // default N value is 6272
     unsigned char regValue = 0;
@@ -800,7 +800,7 @@ void HDMI_Audio_Setting_44100Hz (mode_parameter_t *pModeParam)
 
 
 
-void HDMI_Audio_Setting_48000Hz (mode_parameter_t *pModeParam)
+static void HDMI_Audio_Setting_48000Hz(mode_parameter_t *pModeParam)
 {
     unsigned long N = 6144, CTS = 0;    // default N value is 6144
     unsigned char regValue = 0;
@@ -853,10 +853,7 @@ void HDMI_Audio_Setting_48000Hz (mode_parameter_t *pModeParam)
     
 }
 
-
-
-
-void HDMI_Audio_Setting_32000Hz (mode_parameter_t *pModeParam)
+__attribute__((unused)) static void HDMI_Audio_Setting_32000Hz(mode_parameter_t *pModeParam)
 {
     unsigned long N = 4096, CTS = 0;    // default N value is 4096
     unsigned char regValue = 0;
@@ -926,7 +923,7 @@ void HDMI_Audio_Setting_32000Hz (mode_parameter_t *pModeParam)
  *      None
  *
  */
-void HDMI_Video_Setting (mode_parameter_t *pModeParam, bool isHDMI)
+static void HDMI_Video_Setting(mode_parameter_t *pModeParam, bool isHDMI)
 {
     unsigned long temp = 0;
     unsigned char regValue = 0;
@@ -1017,7 +1014,7 @@ void HDMI_Video_Setting (mode_parameter_t *pModeParam, bool isHDMI)
  *      -1 - Error 
  *
  */
-long HDMI_PHY_Setting (mode_parameter_t *pModeParam)
+static long HDMI_PHY_Setting(mode_parameter_t *pModeParam)
 {
     unsigned long clkIndex;
     hdmi_PHY_param_t *pPHYParamTable;
@@ -1295,7 +1292,7 @@ void HDMI_Disable_Output (void)
  *      Fisrt byte of HDMI EDID FIFO
  *
  */
-unsigned char HDMI_Edid_ReadFirstByte(void)
+static unsigned char HDMI_Edid_ReadFirstByte(void)
 {
     unsigned long value;
 
@@ -1326,7 +1323,7 @@ unsigned char HDMI_Edid_ReadFirstByte(void)
  *      byChecksum
  *
  */
-BYTE HDMI_Edid_CheckSum (BYTE* array, unsigned long size)
+static BYTE HDMI_Edid_CheckSum(BYTE* array, unsigned long size)
 {
     BYTE i, sum = 0;
     for (i = 0; i < size; i++)

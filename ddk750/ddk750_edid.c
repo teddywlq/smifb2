@@ -1,11 +1,9 @@
-//#include <linux/math.h>
 #include "ddk750_defs.h"
 #include "ddk750_hardware.h"
 #include "ddk750_helper.h"
 #include "ddk750_hwi2c.h"
 #include "ddk750_swi2c.h"
 #include "ddk750_edid.h"
-
 #include "ddkdebug.h"
 #include <linux/string.h>
 
@@ -23,13 +21,13 @@
    which is temporarily used in this DDK. */
 #define EDID_DEVICE_I2C_ADDRESS             0xA0
 
-/* GPIO used for the I2C on the PANEL_PATH size  */
+/* GPIO used for the I2C on the SMI0_PATH size  */
 #define EDID_PANEL_I2C_SCL                  DEFAULT_I2C_SCL
 #define EDID_PANEL_I2C_SDA                  DEFAULT_I2C_SDA
 
-/* GPIO used for the I2C on the CRT_PATH size.
+/* GPIO used for the I2C on the SMI1_PATH size.
    These GPIO pins only available in the Evaluation Board version 2.2.
-   Need to find out which pins are used for the CRT_PATH i2c. */
+   Need to find out which pins are used for the SMI1_PATH i2c. */
 #define EDID_CRT_I2C_SCL                    17
 #define EDID_CRT_I2C_SDA                    18
 
@@ -1284,7 +1282,7 @@ long ddk750_edidReadMonitorEx_HW(
  *      0   - Success
  *     -1   - Fail
  */
-long ddk750_edidReadMonitor(
+__attribute__((unused)) static long ddk750_edidReadMonitor(
     disp_path_t displayPath,
     unsigned char *pEDIDBuffer,
     unsigned long bufferSize,
@@ -1306,7 +1304,7 @@ long ddk750_edidReadMonitor(
  *  Output:
  *      0 get header success; -1 fail.
  */
-unsigned char ddk750_edidGetHeader(
+__attribute__((unused)) static unsigned char ddk750_edidGetHeader(
     unsigned char *pEDIDBuffer
 )
 {
@@ -1341,7 +1339,7 @@ unsigned char ddk750_edidGetHeader(
  *      0   - Success
  *     -1   - Fail
  */
-long ddk750_edidHeaderReadMonitorEx(
+__attribute__((unused)) static long ddk750_edidHeaderReadMonitorEx(
     unsigned char sclGpio,
     unsigned char sdaGpio
 )
@@ -1389,7 +1387,7 @@ long ddk750_edidHeaderReadMonitorEx(
     return 0;
 }
 
-long ddk750_edidHeaderReadMonitorExHwI2C(void)
+__attribute__((unused)) static long ddk750_edidHeaderReadMonitorExHwI2C(void)
 {
     unsigned char retry;//value,
     unsigned char edidBuffer[10];

@@ -1,13 +1,10 @@
 #include "ddk750_defs.h"
-//#include "ddk750_hardware.h"
 #include "ddk750_helper.h"
 #include "ddk750_power.h"
 #include "ddk750_clock.h"
 #include "ddk750_chip.h"
 #include "ddk750_helper.h"
 #include "ddk750_help.h"
-
-//#include "ddkdebug.h"
 
 static unsigned char g_ucMemoryClockDivider[] = { 1, 2, 3, 4 };
 static unsigned char g_ucMasterClockDivider[] = { 3, 4, 6, 8 };
@@ -20,7 +17,7 @@ static unsigned char g_ucMasterClockDivider[] = { 3, 4, 6, 8 };
  *      following formula:
  *      inputFreq * M / N / (2 to the power of OD) / (2 to the power of POD)
  */
-unsigned long calcPLL(pll_value_t *pPLL)
+static unsigned long calcPLL(pll_value_t *pPLL)
 {
     return (pPLL->inputFreq * pPLL->M / pPLL->N / twoToPowerOfx(pPLL->OD) / twoToPowerOfx(pPLL->POD));
 }
@@ -176,7 +173,7 @@ unsigned long formatPllReg(pll_value_t *pPLL)
  *      The actual clock value calculated, together with the values of
  *      PLL register stored in the pPLL pointer.
  */
-unsigned long getPllValue(clock_type_t clockType, pll_value_t *pPLL)
+static unsigned long getPllValue(clock_type_t clockType, pll_value_t *pPLL)
 {
     unsigned long ulPllReg = 0;
     

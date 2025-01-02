@@ -1,9 +1,7 @@
 #include "ddk750_defs.h"
 #include "ddk750_hardware.h"
 #include "ddk750_chip.h"
-//#include "ddk750/ddk750_swi2c.h"
 #include "ddk750_display.h"
-//#include "ddk750/ddk750_dvi.h"
 #include "ddk750_power.h"
 #include "ddk750_help.h"
 
@@ -23,7 +21,7 @@
  *      0   - Not Enable
  *      1   - Enable  
  */
-unsigned char isDualPanelEnable(void)
+static unsigned char isDualPanelEnable(void)
 {
     unsigned long value;
 
@@ -105,7 +103,7 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
     unsigned long ulLoopCount = 0;
     static unsigned long ulDeadLoopCount = 10000;
     
-    if (dispControl == PRIMARY_CTRL)
+    if (dispControl == CHANNEL0_CTRL)
     {
         /* Do not wait when the Primary PLL is off or display control is already off. 
            This will prevent the software to wait forever. */
@@ -189,18 +187,18 @@ void waitNextVerticalSync(disp_control_t dispControl, unsigned long vsync_count)
  * Use Primary vertical sync as time delay function.
  * Input: Number of vertical sync to wait.
  */
-void primaryWaitVerticalSync(unsigned long vsync_count)
+static void primaryWaitVerticalSync(unsigned long vsync_count)
 {
-    waitNextVerticalSync(PRIMARY_CTRL, vsync_count);
+    waitNextVerticalSync(CHANNEL0_CTRL, vsync_count);
 }
 
 /*
  * Use crt vertical sync as time delay function.
  * Input: Number of vertical sync to wait.
  */
-void secondaryWaitVerticalSync(unsigned long vsync_count)
+static void secondaryWaitVerticalSync(unsigned long vsync_count)
 {
-    waitNextVerticalSync(SECONDARY_CTRL, vsync_count);
+    waitNextVerticalSync(CHANNEL1_CTRL, vsync_count);
 }
 
 /*
@@ -209,7 +207,7 @@ void secondaryWaitVerticalSync(unsigned long vsync_count)
  * until the current line reaches the Vertical Sync line.
  * This function is really useful when flipping display to prevent tearing.
  *
- * Input: display control (PRIMARY_CTRL or SECONDARY_CTRL)
+ * Input: display control (CHANNEL0_CTRL or CHANNEL1_CTRL)
  */
 void waitVSyncLine(disp_control_t dispControl)
 {
@@ -221,7 +219,7 @@ void waitVSyncLine(disp_control_t dispControl)
     
     do
     {
-        if (dispControl == PRIMARY_CTRL)
+        if (dispControl == CHANNEL0_CTRL)
             value = FIELD_VAL_GET(peekRegisterDWord(PRIMARY_CURRENT_LINE), PRIMARY_CURRENT_LINE, LINE);
         else
             value = FIELD_VAL_GET(peekRegisterDWord(SECONDARY_CURRENT_LINE), SECONDARY_CURRENT_LINE, LINE);
@@ -230,7 +228,7 @@ void waitVSyncLine(disp_control_t dispControl)
 }
 
 
-void swPanelPowerSequence_SM750LE(disp_state_t dispState, unsigned long vsync_delay)
+__attribute__((unused)) static void swPanelPowerSequence_SM750LE(disp_state_t dispState, unsigned long vsync_delay)
 {
     unsigned long ulDispControl, ulMask;
 
@@ -365,7 +363,7 @@ void setDisplayControl(disp_control_t dispControl, disp_state_t dispState)
     unsigned long ulDisplayCtrlReg, ulReservedBits;
 
     /* Set the primary display control */
-    if (dispControl == PRIMARY_CTRL)
+    if (dispControl == CHANNEL0_CTRL)
     {
         ulDisplayCtrlReg = peekRegisterDWord(PRIMARY_DISPLAY_CTRL);
 
@@ -414,7 +412,7 @@ void setDisplayControl(disp_control_t dispControl, disp_state_t dispState)
         //DDKDEBUGPRINT((DISPLAY_LEVEL, "(setDispCtrl) PRIMARY_DISPLAY_CTRL after set: %x\n", peekRegisterDWord(PRIMARY_DISPLAY_CTRL)));
     }
     /* Set the secondary display control */
-    else if(dispControl == SECONDARY_CTRL)
+    else if(dispControl == CHANNEL1_CTRL)
     {
         ulDisplayCtrlReg = peekRegisterDWord(SECONDARY_DISPLAY_CTRL);
 
@@ -483,7 +481,7 @@ void setPath(
     /* Get the current mode parameter of the specific display control */
     modeParam = getCurrentModeParam(dispControl);
     
-    if (dispPath == PANEL_PATH)
+    if (dispPath == SMI0_PATH)
     {
         control = peekRegisterDWord(PRIMARY_DISPLAY_CTRL);
         if (dispState == DISP_ON)
@@ -507,7 +505,7 @@ void setPath(
                 control = FIELD_SET(control, PRIMARY_DISPLAY_CTRL, HSYNC_PHASE, ACTIVE_LOW);
 
             /* Display control is not swapped, so use the normal display data flow */
-            if (dispControl == PRIMARY_CTRL)
+            if (dispControl == CHANNEL0_CTRL)
                 control = FIELD_SET(control, PRIMARY_DISPLAY_CTRL, SELECT, PRIMARY);                    
             else    /* Secondary Control */
                 control = FIELD_SET(control, PRIMARY_DISPLAY_CTRL, SELECT, SECONDARY);
@@ -545,7 +543,7 @@ void setPath(
 
        // DDKDEBUGPRINT((DISPLAY_LEVEL, "(setPath) PRIMARY_DISPLAY_CTRL: %x\n", peekRegisterDWord(PRIMARY_DISPLAY_CTRL)));
     }
-    else if(dispPath == CRT_PATH)   /* CRT Path */
+    else if(dispPath == SMI1_PATH)   /* CRT Path */
     {
         control = peekRegisterDWord(SECONDARY_DISPLAY_CTRL);
     
@@ -570,7 +568,7 @@ void setPath(
                 control = FIELD_SET(control, SECONDARY_DISPLAY_CTRL, HSYNC_PHASE, ACTIVE_LOW);
 
             /* Display control is not swapped, so use the normal display data flow */
-            if (dispControl == PRIMARY_CTRL)
+            if (dispControl == CHANNEL0_CTRL)
                 control = FIELD_SET(control, SECONDARY_DISPLAY_CTRL, SELECT, PRIMARY);
             else
                 control = FIELD_SET(control, SECONDARY_DISPLAY_CTRL, SELECT, SECONDARY);
@@ -696,13 +694,13 @@ long ddk750_detectCRTMonitor(
  * Input:
  *      output          - Logical Display output
  *      dispCtrlUsage   - Display Control Flag Usage:
- *                          0 : Use primary display control (PRIMARY_CTRL) to control 
+ *                          0 : Use primary display control (CHANNEL0_CTRL) to control 
  *                              primary output (LCD1 & CRT1) and use secondary display 
- *                              control (SECONDARY_CTRL) to control secondary output 
+ *                              control (CHANNEL1_CTRL) to control secondary output 
  *                              (CRT2 & LCD2)
- *                          1 : Use primary display control (PRIMARY_CTRL) to control 
+ *                          1 : Use primary display control (CHANNEL0_CTRL) to control 
  *                              secondary output (LCD2 & CRT2) and use secondary display 
- *                              control (SECONDARY_CTRL) to control primary output 
+ *                              control (CHANNEL1_CTRL) to control primary output 
  *                              (LCD1 & CRT1)
  *
  * Output:
@@ -729,11 +727,11 @@ long setLogicalDispOutput(
             setDAC(DISP_OFF);                                   /* Turn off DAC */
             setDPMS(DPMS_OFF);                                  /* Turn off DPMS */
     
-            setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Panel control */
-            setDisplayControl(SECONDARY_CTRL, DISP_OFF);        /* Turn off CRT control */
+            setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Panel control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_OFF);        /* Turn off CRT control */
 
-            setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn off Panel path */
-            setPath(CRT_PATH, PRIMARY_CTRL, DISP_OFF);          /* Turn off CRT path */
+            setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn off Panel path */
+            setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_OFF);          /* Turn off CRT path */
             break;
         }    
         case LCD1_ONLY:
@@ -746,25 +744,25 @@ long setLogicalDispOutput(
             if (dispCtrlUsage == 0)
             {
                 /* Turn on Primary control */
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on CRT control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off CRT control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use panel data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off CRT control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use panel data */
                 }
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_OFF);          /* Turn off CRT Path */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_OFF);          /* Turn off CRT Path */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_OFF);        /* Turn off CRT Path */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_OFF);        /* Turn off CRT Path */
             }
             
             /* 
@@ -797,25 +795,25 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary control */                
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary control */                
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use primary data */
                 }
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn off Panel Path */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn off Panel Path */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary control */                
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn off CRT Path and use secondary data */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary control */                
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn off CRT Path and use secondary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
             }
             
             /* 
@@ -835,17 +833,17 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_OFF);        /* Turn off Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);           /* Turn off CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_OFF);        /* Turn off Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);           /* Turn off CRT Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn off CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn off CRT Path and use Primary data */
             }
             
             /* 
@@ -865,25 +863,25 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
                 } 
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);           /* Turn on CRT Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);           /* Turn on CRT Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -910,26 +908,26 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {    
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
             }
             
             /* 
@@ -962,25 +960,25 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn on Panel Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn on Panel Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn on Panel Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn on Panel Path and use Primary data */
             }
             
             /* 
@@ -1007,26 +1005,26 @@ long setLogicalDispOutput(
              */
             if (dispCtrlUsage == 0)
             {            
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
             }
             
             /* 
@@ -1046,27 +1044,27 @@ long setLogicalDispOutput(
              */
             /* This combination is not valid if panel 1 requires scaling and display
                control is not swapped. */
-          //  if (isScalingEnabled(PRIMARY_CTRL) == 1)
+          //  if (isScalingEnabled(CHANNEL0_CTRL) == 1)
           //      return (-1);
 
             /* 
              * 2. Set all the display control and the display path 
              */
-            setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-            setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
+            setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
 
 
             if (dispCtrlUsage == 0)
             {
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
 
 
             }
             else
             {
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
 
 
             }
@@ -1088,7 +1086,7 @@ long setLogicalDispOutput(
              */    
             /* This combination is not valid if panel requires scaling and display
                control is not swapped. */
-           // if (isScalingEnabled(PRIMARY_CTRL) == 1)
+           // if (isScalingEnabled(CHANNEL0_CTRL) == 1)
            //     return (-1);
                 
             /* Can not enable PANEL2 when the panel type is not 18-bit panel. */            
@@ -1098,17 +1096,17 @@ long setLogicalDispOutput(
             /* 
              * 2. Set all the display control and the display path 
              */
-            setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-            setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
+            setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
             if (dispCtrlUsage == 0)
             {
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
             }
             else
             {
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -1134,7 +1132,7 @@ long setLogicalDispOutput(
              */    
             /* This combination is not valid if panel requires scaling and display
                control is not swapped. */
-            //if (isScalingEnabled(PRIMARY_CTRL) == 1)
+            //if (isScalingEnabled(CHANNEL0_CTRL) == 1)
               //  return (-1);
                 
             /* Can not enable PANEL2 when the panel type is not 18-bit panel. */            
@@ -1144,17 +1142,17 @@ long setLogicalDispOutput(
             /* 
              * 2. Set all the display control and the display path 
              */
-            setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-            setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */            
+            setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */            
             if (dispCtrlUsage == 0)
             {
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
             }
             else
             {
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -1181,13 +1179,13 @@ long setLogicalDispOutput(
  *		isSnd	   		- is or not the second view
  *      output          - Logical Display output
  *      dispCtrlUsage   - Display Control Flag Usage:
- *                          0 : Use primary display control (PRIMARY_CTRL) to control 
+ *                          0 : Use primary display control (CHANNEL0_CTRL) to control 
  *                              primary output (LCD1 & CRT1) and use secondary display 
- *                              control (SECONDARY_CTRL) to control secondary output 
+ *                              control (CHANNEL1_CTRL) to control secondary output 
  *                              (CRT2 & LCD2)
- *                          1 : Use primary display control (PRIMARY_CTRL) to control 
+ *                          1 : Use primary display control (CHANNEL0_CTRL) to control 
  *                              secondary output (LCD2 & CRT2) and use secondary display 
- *                              control (SECONDARY_CTRL) to control primary output 
+ *                              control (CHANNEL1_CTRL) to control primary output 
  *                              (LCD1 & CRT1)
  *
  * Output:
@@ -1214,11 +1212,11 @@ long setLogicalDispOutputExt(
             setDAC(DISP_OFF);                                   /* Turn off DAC */
             setDPMS(DPMS_OFF);                                  /* Turn off DPMS */
     
-            setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Panel control */
-            setDisplayControl(SECONDARY_CTRL, DISP_OFF);        /* Turn off CRT control */
+            setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Panel control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_OFF);        /* Turn off CRT control */
 
-            setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn off Panel path */
-            setPath(CRT_PATH, PRIMARY_CTRL, DISP_OFF);          /* Turn off CRT path */
+            setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn off Panel path */
+            setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_OFF);          /* Turn off CRT path */
             break;
         }    
         case LCD1_ONLY:
@@ -1231,25 +1229,25 @@ long setLogicalDispOutputExt(
             if (dispCtrlUsage == 0)
             {
                 /* Turn on Primary control */
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on CRT control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off CRT control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use panel data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off CRT control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use panel data */
                 }
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_OFF);          /* Turn off CRT Path */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_OFF);          /* Turn off CRT Path */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_OFF);        /* Turn off CRT Path */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_OFF);        /* Turn off CRT Path */
             }
             
             /* 
@@ -1282,25 +1280,25 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary control */                
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary control */                
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use primary data */
                 }
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn off Panel Path */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn off Panel Path */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary control */                
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn off CRT Path and use secondary data */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary control */                
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn off CRT Path and use secondary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
             }
             
             /* 
@@ -1320,17 +1318,17 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_OFF);        /* Turn off Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);           /* Turn off CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_OFF);        /* Turn off Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);           /* Turn off CRT Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn off Panel Path */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn off CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn off Panel Path */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn off CRT Path and use Primary data */
             }
             
             /* 
@@ -1350,25 +1348,25 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
                 }            
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);           /* Turn on CRT Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);           /* Turn on CRT Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -1395,26 +1393,26 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {    
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
             }
             
             /* 
@@ -1447,25 +1445,25 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_OFF);        /* Turn on Panel Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_OFF);        /* Turn on Panel Path and use Primary data */
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_OFF);      /* Turn on Panel Path and use Primary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_OFF);      /* Turn on Panel Path and use Primary data */
             }
             
             /* 
@@ -1492,26 +1490,26 @@ long setLogicalDispOutputExt(
              */
             if (dispCtrlUsage == 0)
             {            
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-                if (isScalingEnabled(PRIMARY_CTRL) == 1)
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+                if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_ON);     /* Turn on Secondary control */
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_ON);     /* Turn on Secondary control */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
                 }
                 else
                 {
-                    setDisplayControl(SECONDARY_CTRL, DISP_OFF);    /* Turn off Secondary control */
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setDisplayControl(CHANNEL1_CTRL, DISP_OFF);    /* Turn off Secondary control */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
                 }
             }
             else
             {
-                setDisplayControl(PRIMARY_CTRL, DISP_OFF);          /* Turn off Primary Control */
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
+                setDisplayControl(CHANNEL0_CTRL, DISP_OFF);          /* Turn off Primary Control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);       /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);         /* Turn on CRT Path and use Secondary data */
             }
             
             /* 
@@ -1531,29 +1529,29 @@ long setLogicalDispOutputExt(
              */
             /* This combination is not valid if panel 1 requires scaling and display
                control is not swapped. */
-            if (isScalingEnabled(PRIMARY_CTRL) == 1)
+            if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 return (-1);
 
             /* 
              * 2. Set all the display control and the display path 
              */
             if(!isSecondDisplay) 
-                setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
+                setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
             else
-                setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
+                setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
             if (dispCtrlUsage == 0)
             {
                 if(!isSecondDisplay) 
-                    setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                    setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
                 else
-                    setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                    setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
             }
             else
             {
                 if(isSecondDisplay)             
-                    setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                    setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
                 else
-                    setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                    setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
             }
             /* 
              * 3. Enable/disable the display devices. 
@@ -1572,7 +1570,7 @@ long setLogicalDispOutputExt(
              */    
             /* This combination is not valid if panel requires scaling and display
                control is not swapped. */
-            if (isScalingEnabled(PRIMARY_CTRL) == 1)
+            if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 return (-1);
                 
             /* Can not enable PANEL2 when the panel type is not 18-bit panel. */            
@@ -1582,17 +1580,17 @@ long setLogicalDispOutputExt(
             /* 
              * 2. Set all the display control and the display path 
              */
-            setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-            setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */
+            setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */
             if (dispCtrlUsage == 0)
             {
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
             }
             else
             {
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -1618,7 +1616,7 @@ long setLogicalDispOutputExt(
              */    
             /* This combination is not valid if panel requires scaling and display
                control is not swapped. */
-            if (isScalingEnabled(PRIMARY_CTRL) == 1)
+            if (isScalingEnabled(CHANNEL0_CTRL) == 1)
                 return (-1);
                 
             /* Can not enable PANEL2 when the panel type is not 18-bit panel. */            
@@ -1628,17 +1626,17 @@ long setLogicalDispOutputExt(
             /* 
              * 2. Set all the display control and the display path 
              */
-            setDisplayControl(PRIMARY_CTRL, DISP_ON);           /* Turn on Primary Control */
-            setDisplayControl(SECONDARY_CTRL, DISP_ON);         /* Turn on Secondary control */            
+            setDisplayControl(CHANNEL0_CTRL, DISP_ON);           /* Turn on Primary Control */
+            setDisplayControl(CHANNEL1_CTRL, DISP_ON);         /* Turn on Secondary control */            
             if (dispCtrlUsage == 0)
             {
-                setPath(PANEL_PATH, PRIMARY_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
-                setPath(CRT_PATH, SECONDARY_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
+                setPath(SMI0_PATH, CHANNEL0_CTRL, DISP_ON);     /* Turn on Panel Path and use Primary data */
+                setPath(SMI1_PATH, CHANNEL1_CTRL, DISP_ON);     /* Turn on CRT Path and use Secondary data */
             }
             else
             {
-                setPath(PANEL_PATH, SECONDARY_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
-                setPath(CRT_PATH, PRIMARY_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
+                setPath(SMI0_PATH, CHANNEL1_CTRL, DISP_ON);   /* Turn on Panel Path and use Secondary data */
+                setPath(SMI1_PATH, CHANNEL0_CTRL, DISP_ON);       /* Turn on CRT Path and use Primary data */
             }
             
             /* 
@@ -1670,9 +1668,9 @@ unsigned char isScalingEnabled(
 {
     unsigned long value;
     
-    /* If display control is not swapped, then check the expansion bit for PRIMARY_CTRL 
-       and SECONDARY_SCALE register for SECONDARY_CTRL. */
-    if (dispCtrl == PRIMARY_CTRL)
+    /* If display control is not swapped, then check the expansion bit for CHANNEL0_CTRL 
+       and SECONDARY_SCALE register for CHANNEL1_CTRL. */
+    if (dispCtrl == CHANNEL0_CTRL)
     {
         value = peekRegisterDWord(SECONDARY_DISPLAY_CTRL);
         if (FIELD_VAL_GET(value, SECONDARY_DISPLAY_CTRL, EXPANSION) == SECONDARY_DISPLAY_CTRL_EXPANSION_ENABLE)

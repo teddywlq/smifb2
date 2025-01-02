@@ -1,37 +1,9 @@
 #ifndef _DDK768_DISPLAY_H_
 #define _DDK768_DISPLAY_H_
+
 #include "ddk768_mode.h"
-typedef enum _disp_path_t
-{
-    CHANNEL0_PATH = 0,
-    CHANNEL1_PATH = 1,
-}
-disp_path_t;
+#include "../hw_com.h"
 
-typedef enum _disp_state_t
-{
-    DISP_OFF = 0,
-    DISP_ON  = 1,
-}
-disp_state_t;
-
-//Cheok: obsolete for Falcon, delete after old code cleans up.
-typedef enum _disp_output_t
-{
-    NO_DISPLAY,             /* All display off. */
-    LCD1_ONLY,              /* LCD1 only */
-    LCD2_ONLY,              /* LCD2 only */
-    CRT2_ONLY,              /* CRT2 only */
-    LCD1_CRT2_SIMUL,        /* Both LCD1 and CRT2 displaying the same content. */
-    LCD1_LCD2_SIMUL,        /* Both LCD1 and LCD2 displaying the same content. */
-    CRT2_LCD2_SIMUL,        /* CRT2 and LCD2 displaying the same content. */
-    LCD1_LCD2_CRT2_SIMUL,   /* LCD1, LCD2, and CRT2 displaying the same content. */
-    LCD1_CRT2_DUAL,         /* LCD1 and CRT2 displaying different contents. */
-    LCD1_LCD2_DUAL,         /* LCD1 and LCD2 displaying different contents. */
-    LCD1_LCD2_CRT2_DUAL     /* LCD2 and CRT2 displaying the same content while
-                               the Panel displaying different content. */
-}
-disp_output_t;
 
 //Cheok(10/172013): New interface for Falcon.
 typedef enum _disp_interface_t
@@ -50,17 +22,6 @@ typedef enum _disp_format_t
     DOUBLE_PIXEL_48BIT
 }
 disp_format_t;
-
-typedef enum _DISP_DPMS_t
-{
-    DISP_DPMS_ON,
-    DISP_DPMS_STANDBY,
-    DISP_DPMS_SUSPEND,
-    DISP_DPMS_OFF
-}
-DISP_DPMS_t;
-
-
 
 /*
  * This function initializes the display.

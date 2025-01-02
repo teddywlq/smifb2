@@ -44,6 +44,6 @@
 #endif
 #endif//RHEL_MAJOR==9
 
-#endif
+#endif//RHEL_MAJOR
 
 #endif

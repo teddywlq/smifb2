@@ -1,11 +1,8 @@
 #include "ddk768_reg.h"
-
 #include "ddk768_chip.h"
 #include "ddk768_power.h"
 #include "ddk768_clock.h"
 #include "ddk768_mode.h"
-
-
 #include "ddk768_help.h"
 #include "ddk768_helper.h"
 
@@ -13,7 +10,7 @@
  * A local function to calculate the output frequency of a given PLL structure.
  *
  */
-unsigned long ddk768_calcPLL(pll_value_t *pPLL)
+static unsigned long ddk768_calcPLL(pll_value_t *pPLL)
 {
     unsigned long pllClk, vcoPower;
     unsigned long fifteenPower = ddk768_twoToPowerOfx(15); /* 2^15 */

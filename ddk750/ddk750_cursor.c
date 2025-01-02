@@ -6,7 +6,7 @@
  * This function initializes the cursor attributes.
  */
 void ddk750_initCursor(
-    disp_control_t dispControl,     /* Display control (PRIMARY_CTRL or SECONDARY_CTRL) */
+    disp_control_t dispControl,     /* Display control (CHANNEL0_CTRL or CHANNEL1_CTRL) */
     unsigned long base,             /* Base Address */ 
     unsigned long color1,           /* Cursor color 1 in RGB 5:6:5 format */
     unsigned long color2,           /* Cursor color 2 in RGB 5:6:5 format */
@@ -17,7 +17,7 @@ void ddk750_initCursor(
      * 1. Set the cursor source address 
      */
     pokeRegisterDWord(
-        (dispControl == PRIMARY_CTRL) ? PRIMARY_HWC_ADDRESS : SECONDARY_HWC_ADDRESS,
+        (dispControl == CHANNEL0_CTRL) ? PRIMARY_HWC_ADDRESS : SECONDARY_HWC_ADDRESS,
         FIELD_SET(0, PRIMARY_HWC_ADDRESS, EXT, LOCAL) |
         FIELD_VALUE(0, PRIMARY_HWC_ADDRESS, ADDRESS, base));
         
@@ -25,12 +25,12 @@ void ddk750_initCursor(
      * 2. Set the cursor color composition 
      */
     pokeRegisterDWord(
-        (dispControl == PRIMARY_CTRL) ? PRIMARY_HWC_COLOR_12 : SECONDARY_HWC_COLOR_12, 
+        (dispControl == CHANNEL0_CTRL) ? PRIMARY_HWC_COLOR_12 : SECONDARY_HWC_COLOR_12, 
         FIELD_VALUE(0, PRIMARY_HWC_COLOR_12, 1_RGB565, color1) |
         FIELD_VALUE(0, PRIMARY_HWC_COLOR_12, 2_RGB565, color2) );
 
     pokeRegisterDWord(
-        (dispControl == PRIMARY_CTRL) ? PRIMARY_HWC_COLOR_3 : SECONDARY_HWC_COLOR_3,
+        (dispControl == CHANNEL0_CTRL) ? PRIMARY_HWC_COLOR_3 : SECONDARY_HWC_COLOR_3,
         FIELD_VALUE(0, PRIMARY_HWC_COLOR_3, RGB565, color3));
 }
 
@@ -38,7 +38,7 @@ void ddk750_initCursor(
  * This function sets the cursor position.
  */
 void ddk750_setCursorPosition(
-    disp_control_t dispControl,     /* Display control (PRIMARY_CTRL or SECONDARY_CTRL) */
+    disp_control_t dispControl,     /* Display control (CHANNEL0_CTRL or CHANNEL1_CTRL) */
     unsigned long dx,               /* X Coordinate of the cursor */
     unsigned long dy,               /* Y Coordinate of the cursor */
     unsigned char topOutside,       /* Top Boundary Select: either partially outside (= 1) 
@@ -68,20 +68,20 @@ void ddk750_setCursorPosition(
         value = FIELD_SET(value, PRIMARY_HWC_LOCATION, LEFT, INSIDE);
 
     /* Set the register accordingly, either Panel cursor or CRT cursor */
-    pokeRegisterDWord((dispControl == PRIMARY_CTRL) ? PRIMARY_HWC_LOCATION : SECONDARY_HWC_LOCATION, value);
+    pokeRegisterDWord((dispControl == CHANNEL0_CTRL) ? PRIMARY_HWC_LOCATION : SECONDARY_HWC_LOCATION, value);
 }
 
 /*
  * This function enables/disables the cursor.
  */
 void ddk750_enableCursor(
-    disp_control_t dispControl,     /* Display control (PRIMARY_CTRL or SECONDARY_CTRL) */
+    disp_control_t dispControl,     /* Display control (CHANNEL0_CTRL or CHANNEL1_CTRL) */
     unsigned long enable
 )
 {
     unsigned long cursorRegister, value;
 
-    cursorRegister = (dispControl == PRIMARY_CTRL) ? PRIMARY_HWC_ADDRESS : SECONDARY_HWC_ADDRESS;
+    cursorRegister = (dispControl == CHANNEL0_CTRL) ? PRIMARY_HWC_ADDRESS : SECONDARY_HWC_ADDRESS;
     
 	value = peekRegisterDWord(cursorRegister);
     if (enable) 

@@ -18,7 +18,7 @@ static unsigned short WM8978_REGVAL[58]=
 	0X0001,0X0001
 }; 
 
-unsigned char WM8978_Write_Reg(unsigned char reg, unsigned short val)
+static unsigned char WM8978_Write_Reg(unsigned char reg, unsigned short val)
 {
 	unsigned char res;
 	unsigned char RegAddr;
@@ -35,10 +35,105 @@ unsigned char WM8978_Write_Reg(unsigned char reg, unsigned short val)
 	return res;
 }
 
-unsigned short WM8978_Read_Reg(unsigned char reg)
+static unsigned short WM8978_Read_Reg(unsigned char reg)
 {  
 	return WM8978_REGVAL[reg];	
 } 
+static void WM8978_MIC_Gain(unsigned char gain)
+{
+	gain &= 0x3F;
+	WM8978_Write_Reg(45, gain);		
+	WM8978_Write_Reg(46, gain|1<<8);	
+}
+
+
+static void WM8978_LINEIN_Gain(unsigned char gain)
+{
+	unsigned short regval;
+	gain &= 0x07;
+	regval = WM8978_Read_Reg(47);	
+	regval &= ~(7<<4);						
+ 	WM8978_Write_Reg(47, regval|gain<<4);	
+	regval = WM8978_Read_Reg(48);	
+	regval &= ~(7<<4);						
+ 	WM8978_Write_Reg(48,regval|gain<<4);	
+}
+
+static void WM8978_AUX_Gain(unsigned char gain)
+{
+	unsigned short regval;
+	gain &= 0x07;
+	regval = WM8978_Read_Reg(47);	
+	regval &= ~(7<<0);					
+ 	WM8978_Write_Reg(47, regval|gain<<0);	
+	regval = WM8978_Read_Reg(48);	
+	regval &= ~(7<<0);						
+ 	WM8978_Write_Reg(48, regval|gain<<0);	
+} 
+
+static void WM8978_ADDA_Cfg(unsigned char dacen, unsigned char adcen)
+{
+	unsigned short regval;
+	regval = WM8978_Read_Reg(3);	
+	if(dacen)
+		regval |= 3<<0;			
+	else 
+		regval &= ~(3<<0);			
+	WM8978_Write_Reg(3, regval);
+	regval = WM8978_Read_Reg(2);	
+	if(adcen)
+		regval |= 3<<0;			
+	else 
+		regval &= ~(3<<0);		
+	WM8978_Write_Reg(2, regval);	
+}
+
+
+static void WM8978_Input_Cfg(unsigned char micen, unsigned char lineinen, unsigned char auxen)
+{
+	unsigned short regval;  
+	regval = WM8978_Read_Reg(2);
+	if(micen)
+		regval |= 3<<2;		
+	else 
+		regval &= ~(3<<2);			
+ 	WM8978_Write_Reg(2, regval);	
+	regval = WM8978_Read_Reg(44);
+	if(micen)
+		regval |= 3<<4|3<<0;	
+	else 
+		regval &= ~(3<<4|3<<0);
+	WM8978_Write_Reg(44, regval);
+	if(lineinen)
+		WM8978_LINEIN_Gain(5);
+	else 
+		WM8978_LINEIN_Gain(0);	
+	if(auxen)
+		WM8978_AUX_Gain(7);
+	else 
+		WM8978_AUX_Gain(0);
+}
+
+static void WM8978_Output_Cfg(unsigned char dacen, unsigned char bpsen)
+{
+	unsigned short regval = 0;
+	if(dacen)
+		regval |= 1<<0; 
+	if(bpsen)
+	{
+		regval |= 1<<1; 
+		regval |= 5<<2;
+	} 
+	WM8978_Write_Reg(50,regval);
+	WM8978_Write_Reg(51,regval);
+}
+
+static void WM8978_I2S_Cfg(unsigned char fmt, unsigned char len)
+{
+	fmt &= 0x03;
+	len &= 0x03; 
+	WM8978_Write_Reg(4, (fmt<<3)|(len<<5));	
+}
 
 unsigned char WM8978_Init(void)
 {
@@ -92,99 +187,7 @@ void WM8978_DeInit(void)
 	/* To Do: Here should be read device register not globle array.*/
 	WM8978_Write_Reg(0, 0);
 }
-
-
-void WM8978_ADDA_Cfg(unsigned char dacen, unsigned char adcen)
-{
-	unsigned short regval;
-	regval = WM8978_Read_Reg(3);	
-	if(dacen)
-		regval |= 3<<0;			
-	else 
-		regval &= ~(3<<0);			
-	WM8978_Write_Reg(3, regval);
-	regval = WM8978_Read_Reg(2);	
-	if(adcen)
-		regval |= 3<<0;			
-	else 
-		regval &= ~(3<<0);		
-	WM8978_Write_Reg(2, regval);	
-}
-
-
-void WM8978_Input_Cfg(unsigned char micen, unsigned char lineinen, unsigned char auxen)
-{
-	unsigned short regval;  
-	regval = WM8978_Read_Reg(2);
-	if(micen)
-		regval |= 3<<2;		
-	else 
-		regval &= ~(3<<2);			
- 	WM8978_Write_Reg(2, regval);	
-	regval = WM8978_Read_Reg(44);
-	if(micen)
-		regval |= 3<<4|3<<0;	
-	else 
-		regval &= ~(3<<4|3<<0);
-	WM8978_Write_Reg(44, regval);
-	if(lineinen)
-		WM8978_LINEIN_Gain(5);
-	else 
-		WM8978_LINEIN_Gain(0);	
-	if(auxen)
-		WM8978_AUX_Gain(7);
-	else 
-		WM8978_AUX_Gain(0);
-}
-
-void WM8978_MIC_Gain(unsigned char gain)
-{
-	gain &= 0x3F;
-	WM8978_Write_Reg(45, gain);		
-	WM8978_Write_Reg(46, gain|1<<8);	
-}
-
-
-void WM8978_LINEIN_Gain(unsigned char gain)
-{
-	unsigned short regval;
-	gain &= 0x07;
-	regval = WM8978_Read_Reg(47);	
-	regval &= ~(7<<4);						
- 	WM8978_Write_Reg(47, regval|gain<<4);	
-	regval = WM8978_Read_Reg(48);	
-	regval &= ~(7<<4);						
- 	WM8978_Write_Reg(48,regval|gain<<4);	
-}
-
-void WM8978_AUX_Gain(unsigned char gain)
-{
-	unsigned short regval;
-	gain &= 0x07;
-	regval = WM8978_Read_Reg(47);	
-	regval &= ~(7<<0);					
- 	WM8978_Write_Reg(47, regval|gain<<0);	
-	regval = WM8978_Read_Reg(48);	
-	regval &= ~(7<<0);						
- 	WM8978_Write_Reg(48, regval|gain<<0);	
-}  
-
-
-void WM8978_Output_Cfg(unsigned char dacen, unsigned char bpsen)
-{
-	unsigned short regval = 0;
-	if(dacen)
-		regval |= 1<<0; 
-	if(bpsen)
-	{
-		regval |= 1<<1; 
-		regval |= 5<<2;
-	} 
-	WM8978_Write_Reg(50,regval);
-	WM8978_Write_Reg(51,regval);
-}
-
-
+ 
 void WM8978_HPvol_Set(unsigned char voll, unsigned char volr)
 {
 	voll &= 0x3F;
@@ -202,12 +205,4 @@ void WM8978_SPKvol_Set(unsigned char volx)
 	if(volx == 0)volx |= 1<<6;		
  	WM8978_Write_Reg(54, volx);	
 	WM8978_Write_Reg(55, volx|(1<<8)); 
-}
-
-
-void WM8978_I2S_Cfg(unsigned char fmt, unsigned char len)
-{
-	fmt &= 0x03;
-	len &= 0x03; 
-	WM8978_Write_Reg(4, (fmt<<3)|(len<<5));	
 }

@@ -7,7 +7,7 @@
 /* 
  * Change interrupt mask 
  */
-void setIntMask(
+__attribute__((unused)) static void setIntMask(
     unsigned long mask_on, 
     unsigned long mask_off
 )

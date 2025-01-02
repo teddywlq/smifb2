@@ -238,7 +238,7 @@ unsigned long ulColor)    /* Color to compare. */
  * It returns a double word with the transparent fields properly set,
  * while other fields are 0.
  */
-unsigned long ddk768_deGetTransparency(void)
+static unsigned long ddk768_deGetTransparency(void)
 {
     unsigned long de_ctrl;
 
@@ -255,7 +255,7 @@ unsigned long ddk768_deGetTransparency(void)
 /*
  * This function sets the pixel format that will apply to the 2D Engine.
  */
-void ddk768_deSetPixelFormat(
+static void ddk768_deSetPixelFormat(
     unsigned long bpp
 )
 {

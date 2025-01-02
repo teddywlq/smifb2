@@ -1,21 +1,7 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
-#include "ddk750_mode.h"
-
-typedef enum _disp_path_t
-{
-    PANEL_PATH = 0,
-    CRT_PATH   = 1,
-}
-disp_path_t;
-
-typedef enum _disp_state_t
-{
-    DISP_OFF = 0,
-    DISP_ON  = 1,
-}
-disp_state_t;
+#include "../hw_com.h"
 
 typedef enum _disp_output_t
 {

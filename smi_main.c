@@ -356,13 +356,14 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		EP_HDMI_Init(0);
 		EP_HDMI_Set_Video_Timing(1,0);
 #endif
-
+		setDisplayControl(CHANNEL0_CTRL, DISP_OFF);
+		setDisplayControl(CHANNEL1_CTRL, DISP_OFF);
 	}
 	else
 	{
 		ddk768_initChip();
 		ddk768_deInit();
-		hw768_init_hdmi();
+		HDMI_Init();
 #ifdef USE_EP952
 		EP_HDMI_Init(1);
 		EP_HDMI_Set_Video_Timing(1,1);

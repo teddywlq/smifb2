@@ -1,14 +1,11 @@
 #include "linux/string.h"
 #include <linux/delay.h>	
 
-
 #include "ddk768_reg.h"
-
 #include "ddk768_chip.h"
 #include "ddk768_clock.h"
 #include "ddk768_power.h"
 #include "ddk768_mode.h"
-
 #include "ddk768_help.h"
 
 extern int lvds_channel;
@@ -26,8 +23,7 @@ extern int clk_phase;
  *  Note that the most timings in this table is made according to standard VESA 
  *  parameters for the popular modes.
  */
-static mode_parameter_t gDefaultModeParamTable[] =
-{
+static mode_parameter_t gDefaultModeParamTable[] = {
 /* 640 x 480  [4:3] */
 /* The first 2 commented lines below are taken from SM502, the rest timing are
    taken from the VESA Monitor Timing Standard */
@@ -204,8 +200,7 @@ static mode_parameter_t gDefaultModeParamTable[] =
  *  Note that the most timings in this table is made according to standard VESA 
  *  parameters for the popular modes.
  */
-static mode_parameter_t gLVDSModeParamTable[] =
-{
+static mode_parameter_t gLVDSModeParamTable[] = {
 /* 640 x 480  [4:3] */
 /* The first 2 commented lines below are taken from SM502, the rest timing are
    taken from the VESA Monitor Timing Standard */
@@ -382,17 +377,14 @@ static mode_parameter_t gLVDSModeParamTable[] =
  { 0, 0, 0, 0, NEG, 0, 0, 0, 0, NEG, 0, 0, 0, NEG},
 };
 
-
-static mode_parameter_t gChannel0ModeParamTable[MAX_MODE_TABLE_ENTRIES] =
-{
-    /* End of table */
-     { 0, 0, 0, 0, NEG, 0, 0, 0, 0, NEG, 0, 0, 0, NEG},
+static mode_parameter_t gChannel0ModeParamTable[MAX_MODE_TABLE_ENTRIES] = {
+	/* End of table */
+	{ 0, 0, 0, 0, NEG, 0, 0, 0, 0, NEG, 0, 0, 0, NEG },
 };
 
-static mode_parameter_t gChannel1ModeParamTable[MAX_MODE_TABLE_ENTRIES] =
-{
-    /* End of table */
-     { 0, 0, 0, 0, NEG, 0, 0, 0, 0, NEG, 0, 0, 0, NEG},
+static mode_parameter_t gChannel1ModeParamTable[MAX_MODE_TABLE_ENTRIES] = {
+	/* End of table */
+	{ 0, 0, 0, 0, NEG, 0, 0, 0, 0, NEG, 0, 0, 0, NEG },
 };
 
 /* Static variable to store the mode information. */
@@ -400,21 +392,21 @@ static mode_parameter_t gChannel0CurrentModeParam;
 static mode_parameter_t gChannel1CurrentModeParam;
 
 
-void debug_mode_param(mode_parameter_t *modeParam)
+__attribute__((unused)) static void debug_mode_param(mode_parameter_t *modeParam)
 {
-    printk(KERN_INFO "%lu %lu %lu %lu %s %lu %lu %lu %lu %s %lu %lu %lu %s\n",
-        modeParam->horizontal_total, modeParam->horizontal_display_end,
-        modeParam->horizontal_sync_start, modeParam->horizontal_sync_width,
-        modeParam->horizontal_sync_polarity == POS ? "POS" : "NEG",
-        modeParam->vertical_total, modeParam->vertical_display_end,
-        modeParam->vertical_sync_start, modeParam->vertical_sync_height,
-        modeParam->vertical_sync_polarity == POS ? "POS" : "NEG",
-        modeParam->pixel_clock, modeParam->horizontal_frequency,
-        modeParam->vertical_frequency,
-        modeParam->clock_phase_polarity == POS ? "POS" : "NEG");
+	printk(KERN_INFO
+	       "%lu %lu %lu %lu %s %lu %lu %lu %lu %s %lu %lu %lu %s\n",
+	       modeParam->horizontal_total, modeParam->horizontal_display_end,
+	       modeParam->horizontal_sync_start,
+	       modeParam->horizontal_sync_width,
+	       modeParam->horizontal_sync_polarity == POS ? "POS" : "NEG",
+	       modeParam->vertical_total, modeParam->vertical_display_end,
+	       modeParam->vertical_sync_start, modeParam->vertical_sync_height,
+	       modeParam->vertical_sync_polarity == POS ? "POS" : "NEG",
+	       modeParam->pixel_clock, modeParam->horizontal_frequency,
+	       modeParam->vertical_frequency,
+	       modeParam->clock_phase_polarity == POS ? "POS" : "NEG");
 }
-
-
 
 /*
  *  ddk768_getUserDataSignature
@@ -441,19 +433,18 @@ unsigned long ddk768_getUserDataSignature()
  *      0   - Identical mode
  *     -1   - Mode is not identical
  */
-long compareModeParam(
-    mode_parameter_t *pModeParam1,
-    mode_parameter_t *pModeParam2
-)
+long compareModeParam(mode_parameter_t *pModeParam1,
+		      mode_parameter_t *pModeParam2)
 {
-    if ((pModeParam1 != (mode_parameter_t *)0) &&
-        (pModeParam2 != (mode_parameter_t *)0))
-    {
-        if (memcmp((void *)pModeParam1, (void *)pModeParam2, sizeof(mode_parameter_t)) == 0)
-            return 0;
-    }
-        
-    return (-1);
+	if ((pModeParam1 != (mode_parameter_t *) 0) &&
+	    (pModeParam2 != (mode_parameter_t *) 0)) {
+		if (memcmp
+		    ((void *)pModeParam1, (void *)pModeParam2,
+		     sizeof(mode_parameter_t)) == 0)
+			return 0;
+	}
+
+	return (-1);
 }
 
 /*
@@ -470,10 +461,8 @@ long compareModeParam(
  *          1 means that the mode param is the second mode encountered in the table
  *          etc...
  */
-unsigned short getDuplicateModeIndex(
-    disp_control_t dispCtrl,
-    mode_parameter_t *pModeParam
-)
+unsigned short getDuplicateModeIndex(disp_control_t dispCtrl,
+				     mode_parameter_t *pModeParam)
 {
     unsigned short index, modeIndex;
     mode_parameter_t *pModeTable;
@@ -519,13 +508,11 @@ unsigned short getDuplicateModeIndex(
  *      Success: return a pointer to the mode_parameter_t entry.
  *      Fail: a NULL pointer.
  */
-mode_parameter_t *ddk768_findModeParamFromTable(
-    unsigned long width, 
-    unsigned long height, 
-    unsigned long refresh_rate,
-    unsigned short index,
-    mode_parameter_t *pModeTable
-)
+mode_parameter_t *ddk768_findModeParamFromTable(unsigned long width,
+						unsigned long height,
+						unsigned long refresh_rate,
+						unsigned short index,
+						mode_parameter_t *pModeTable)
 {
     unsigned short modeIndex = 0, tempIndex = 0;
     
@@ -555,15 +542,15 @@ mode_parameter_t *ddk768_findModeParamFromTable(
  *  Success: return a pointer to the mode_parameter_t entry.
  *  Fail: a NULL pointer.
  */
-mode_parameter_t *ddk768_findModeParam(
-    disp_control_t dispCtrl,
-    unsigned long width, 
-    unsigned long height, 
-    unsigned long refresh_rate,
-    unsigned short index
-)
+mode_parameter_t *ddk768_findModeParam(disp_control_t dispCtrl,
+				       unsigned long width,
+				       unsigned long height,
+				       unsigned long refresh_rate,
+				       unsigned short index)
 {
-    return ddk768_findModeParamFromTable(width, height, refresh_rate, index, ddk768_getStockModeParamTableEx(dispCtrl));
+	return ddk768_findModeParamFromTable(width, height, refresh_rate, index,
+					     ddk768_getStockModeParamTableEx
+					     (dispCtrl));
 }
 
 /*
@@ -572,13 +559,12 @@ mode_parameter_t *ddk768_findModeParam(
  *  Success: return a pointer to the mode_parameter_t entry.
  *  Fail: a NULL pointer.
  */
-mode_parameter_t *ddk768_findVesaModeParam(
-    unsigned long width, 
-    unsigned long height, 
-    unsigned long refresh_rate
-)
+mode_parameter_t *ddk768_findVesaModeParam(unsigned long width,
+					   unsigned long height,
+					   unsigned long refresh_rate)
 {
-    return ddk768_findModeParamFromTable(width, height, refresh_rate, 0, gDefaultModeParamTable);
+	return ddk768_findModeParamFromTable(width, height, refresh_rate, 0,
+					     gDefaultModeParamTable);
 }
 
 /*
@@ -611,32 +597,28 @@ unsigned long ddk768_getStockModeParamTableSize()
  *  Output:
  *      Pointer to the mode table
  */
-mode_parameter_t *ddk768_getStockModeParamTableEx(
-    disp_control_t dispCtrl
-)
+mode_parameter_t *ddk768_getStockModeParamTableEx(disp_control_t dispCtrl)
 {
-    mode_parameter_t *pModeTable;
-    
-    if (dispCtrl == CHANNEL0_CTRL){
-        pModeTable = (mode_parameter_t *)gChannel0ModeParamTable;
-    }else{
-        pModeTable = (mode_parameter_t *)gChannel1ModeParamTable;
-    }
+	mode_parameter_t *pModeTable;
 
-	if(lvds_channel)
-	{
-		pModeTable = (mode_parameter_t *)gLVDSModeParamTable;
-	}	
+	if (dispCtrl == CHANNEL0_CTRL) {
+		pModeTable = (mode_parameter_t *) gChannel0ModeParamTable;
+	} else {
+		pModeTable = (mode_parameter_t *) gChannel1ModeParamTable;
+	}
+
+	if (lvds_channel) {
+		pModeTable = (mode_parameter_t *) gLVDSModeParamTable;
+	}
 
 	/* Check if the table exist by checking the first entry. 
-       If it doesn't, then use the default mode table. */
+	   If it doesn't, then use the default mode table. */
 
-    if (pModeTable->pixel_clock == 0)
-    {
-        pModeTable = ddk768_getStockModeParamTable();
-    }
-        
-    return (pModeTable);
+	if (pModeTable->pixel_clock == 0) {
+		pModeTable = ddk768_getStockModeParamTable();
+	}
+
+	return (pModeTable);
 }
 
 /*
@@ -650,9 +632,7 @@ mode_parameter_t *ddk768_getStockModeParamTableEx(
  *  Output:
  *      Size of the requeted mode param table.
  */
-unsigned long ddk768_getStockModeParamTableSizeEx(
-    disp_control_t dispCtrl
-)
+unsigned long ddk768_getStockModeParamTableSizeEx(disp_control_t dispCtrl)
 {
     unsigned long tableSize;
     mode_parameter_t *pModeTable;
@@ -683,14 +663,12 @@ unsigned long getMaximumModeEntries()
 /* 
  * This function returns the current mode.
  */
-mode_parameter_t ddk768_getCurrentModeParam(
-    disp_control_t dispCtrl
-)
+mode_parameter_t ddk768_getCurrentModeParam(disp_control_t dispCtrl)
 {
-    if (dispCtrl == CHANNEL0_CTRL)
-        return gChannel0CurrentModeParam;
-    else
-        return gChannel1CurrentModeParam;
+	if (dispCtrl == CHANNEL0_CTRL)
+		return gChannel0CurrentModeParam;
+	else
+		return gChannel1CurrentModeParam;
 }
 
 /*
@@ -706,58 +684,53 @@ mode_parameter_t ddk768_getCurrentModeParam(
  *      0   - Success
  *     -1   - Fail
  */
-long addTiming(
-    disp_control_t dispCtrl,
-    mode_parameter_t *pNewModeList,
-    unsigned long totalList,
-    unsigned char clearTable
-)
+long addTiming(disp_control_t dispCtrl,
+	       mode_parameter_t *pNewModeList,
+	       unsigned long totalList, unsigned char clearTable)
 {
-    mode_parameter_t *pModeParamTable;
-    unsigned char index;
-    long returnValue = 0;
-    
-    /* Get the correct table */
-    if (dispCtrl == CHANNEL0_CTRL)
-        pModeParamTable = (mode_parameter_t *)gChannel0ModeParamTable;
-    else
-        pModeParamTable = (mode_parameter_t *)gChannel1ModeParamTable;
-    
-    if (clearTable == 0)
-    {    
-        /* Find the last index where the timing will be added to */
-        index = 0;
-        while(pModeParamTable[index].pixel_clock != 0)
-            index++;
-    }
-    else
-    {
-        /* Clear and reset the mode table first */
-        for (index = 0; index < MAX_MODE_TABLE_ENTRIES; index++)
-            memset((void*)&pModeParamTable[index], 0, sizeof(mode_parameter_t));
-            
-        /* Reset index */
-        index = 0;
-    }
-        
-    /* Update the number of modes those can be added to the current table. */
-    if (totalList > (unsigned long)(MAX_MODE_TABLE_ENTRIES - index))
-        totalList = (unsigned long)(MAX_MODE_TABLE_ENTRIES - index);
-    else
-        returnValue = (-1);
-    
-    /* Check if totalList is 0, which means that the table is full. */        
-    if (totalList == 0)
-        returnValue = (-1);
-        
-    /* Add the list of modes provided by the caller */
-    while (totalList--)
-    {
-        memcpy((void *)&pModeParamTable[index], (void *)&pNewModeList[index], sizeof(mode_parameter_t));
-        index++;
-    }
-        
-    return returnValue;
+	mode_parameter_t *pModeParamTable;
+	unsigned char index;
+	long returnValue = 0;
+
+	/* Get the correct table */
+	if (dispCtrl == CHANNEL0_CTRL)
+		pModeParamTable = (mode_parameter_t *) gChannel0ModeParamTable;
+	else
+		pModeParamTable = (mode_parameter_t *) gChannel1ModeParamTable;
+
+	if (clearTable == 0) {
+		/* Find the last index where the timing will be added to */
+		index = 0;
+		while (pModeParamTable[index].pixel_clock != 0)
+			index++;
+	} else {
+		/* Clear and reset the mode table first */
+		for (index = 0; index < MAX_MODE_TABLE_ENTRIES; index++)
+			memset((void *)&pModeParamTable[index], 0,
+			       sizeof(mode_parameter_t));
+
+		/* Reset index */
+		index = 0;
+	}
+
+	/* Update the number of modes those can be added to the current table. */
+	if (totalList > (unsigned long)(MAX_MODE_TABLE_ENTRIES - index))
+		totalList = (unsigned long)(MAX_MODE_TABLE_ENTRIES - index);
+	else
+		returnValue = (-1);
+
+	/* Check if totalList is 0, which means that the table is full. */
+	if (totalList == 0)
+		returnValue = (-1);
+
+	/* Add the list of modes provided by the caller */
+	while (totalList--) {
+		memcpy((void *)&pModeParamTable[index],
+		       (void *)&pNewModeList[index], sizeof(mode_parameter_t));
+		index++;
+	}
+
+	return returnValue;
 }
 
 /*
@@ -767,19 +740,18 @@ long addTiming(
  *		dispControl		- display control of which base address to be set.
  *		ulBaseAddress	- Base Address value to be set.
  */
-void ddk768_setDisplayBaseAddress(
-	disp_control_t dispControl,
-	unsigned long ulBaseAddress
-)
+void ddk768_setDisplayBaseAddress(disp_control_t dispControl,
+				  unsigned long ulBaseAddress)
 {
-    unsigned long regFB;
+	unsigned long regFB;
 
-    regFB = (dispControl == CHANNEL0_CTRL) ? FB_ADDRESS : (FB_ADDRESS+CHANNEL_OFFSET);
+	regFB =
+	    (dispControl ==
+	     CHANNEL0_CTRL) ? FB_ADDRESS : (FB_ADDRESS + CHANNEL_OFFSET);
 
-		/* Frame buffer base for this mode */
-	pokeRegisterDWord(regFB,
-          FIELD_SET(0, FB_ADDRESS, STATUS, PENDING)
-        | FIELD_VALUE(0, FB_ADDRESS, ADDRESS, ulBaseAddress));
+	/* Frame buffer base for this mode */
+	pokeRegisterDWord(regFB, FIELD_SET(0, FB_ADDRESS, STATUS, PENDING)
+			  | FIELD_VALUE(0, FB_ADDRESS, ADDRESS, ulBaseAddress));
 }
 
 /*
@@ -794,16 +766,17 @@ void ddk768_setDisplayBaseAddress(
  *      1   - Display is pending
  *      0   - Display is not pending
  */
-long isDisplayBasePending(
-    disp_control_t dispControl
-)
+long isDisplayBasePending(disp_control_t dispControl)
 {
-    unsigned long regFB;
+	unsigned long regFB;
 
-    regFB = (dispControl == CHANNEL0_CTRL) ? FB_ADDRESS : (FB_ADDRESS+CHANNEL_OFFSET);
+	regFB =
+	    (dispControl ==
+	     CHANNEL0_CTRL) ? FB_ADDRESS : (FB_ADDRESS + CHANNEL_OFFSET);
 
-    if (FIELD_VAL_GET(peekRegisterDWord(regFB), FB_ADDRESS, STATUS) == FB_ADDRESS_STATUS_PENDING)
-        return 1;
+	if (FIELD_VAL_GET(peekRegisterDWord(regFB), FB_ADDRESS, STATUS) ==
+	    FB_ADDRESS_STATUS_PENDING)
+		return 1;
 
     return (0);
 }
@@ -816,57 +789,56 @@ long isDisplayBasePending(
  *         0 = success
  *        -1 = fail.
  */
-long ddk768_programModeRegisters(
-logicalMode_t *pLogicalMode, 
-mode_parameter_t *pModeParam,   /* mode information about pixel clock, horizontal total, etc. */
-pll_value_t *pPLL               /* Pre-calculated values for the PLL */
-)
+static long ddk768_programModeRegisters(logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam,	/* mode information about pixel clock, horizontal total, etc. */
+				 pll_value_t *pPLL	/* Pre-calculated values for the PLL */
+    )
 {
-    unsigned long ulTmpValue;
-    unsigned long paletteRam;
-    unsigned long offset, pllReg;
-    unsigned long hdmi_channel;
+	unsigned long ulTmpValue;
+	unsigned long paletteRam;
+	unsigned long offset, pllReg;
+	unsigned long hdmi_channel;
 	unsigned long regvalue;
-#if 0 // print UHD register setting for debug.
-    if (pLogicalMode->x == 3840)
-        return(printModeRegisters(pLogicalMode, pModeParam, pPLL));
+#if 0				// print UHD register setting for debug.
+	if (pLogicalMode->x == 3840)
+		return (printModeRegisters(pLogicalMode, pModeParam, pPLL));
 #endif
 
-        /*  Make sure normal display channel is used, not VGA channel */
-        pokeRegisterDWord(VGA_CONFIGURATION,
-                          FIELD_SET(0, VGA_CONFIGURATION, PLL, PANEL) | FIELD_SET(0, VGA_CONFIGURATION, MODE, GRAPHIC));
+	/*  Make sure normal display channel is used, not VGA channel */
+	pokeRegisterDWord(VGA_CONFIGURATION,
+			  FIELD_SET(0, VGA_CONFIGURATION, PLL,
+				    PANEL) | FIELD_SET(0, VGA_CONFIGURATION,
+						       MODE, GRAPHIC));
 
-    offset = (pLogicalMode->dispCtrl==CHANNEL0_CTRL)? 0 : CHANNEL_OFFSET;
-	pllReg = (pLogicalMode->dispCtrl==CHANNEL0_CTRL)? VCLK0_PLL : VCLK1_PLL;
-
+	offset = (pLogicalMode->dispCtrl == CHANNEL0_CTRL) ? 0 : CHANNEL_OFFSET;
+	pllReg =
+	    (pLogicalMode->dispCtrl == CHANNEL0_CTRL) ? VCLK0_PLL : VCLK1_PLL;
 
 	/* Turn off PLL at first. */
-    regvalue = peekRegisterByte(pllReg);
-    regvalue |= (1 << 0);
-    pokeRegisterDWord(pllReg, regvalue);
-    /* Poke setting. */
-    regvalue = ddk768_formatPllReg(pPLL);
-    regvalue |= (1 << 0);
-    pokeRegisterDWord(pllReg, regvalue);
-    /* Delay 100 us and turn on PLL. */
-    udelay(100);
-    regvalue = ddk768_formatPllReg(pPLL);
-    regvalue &= ~(1 << 0);
-    pokeRegisterDWord(pllReg, regvalue);
-  
-    
+	regvalue = peekRegisterByte(pllReg);
+	regvalue |= (1 << 0);
+	pokeRegisterDWord(pllReg, regvalue);
+	/* Poke setting. */
+	regvalue = ddk768_formatPllReg(pPLL);
+	regvalue |= (1 << 0);
+	pokeRegisterDWord(pllReg, regvalue);
+	/* Delay 100 us and turn on PLL. */
+	udelay(100);
+	regvalue = ddk768_formatPllReg(pPLL);
+	regvalue &= ~(1 << 0);
+	pokeRegisterDWord(pllReg, regvalue);
+
 #if 0
-    /* Frame buffer base */
-    pokeRegisterDWord((FB_ADDRESS+offset),
-          FIELD_SET(0, FB_ADDRESS, STATUS, PENDING)
-        | FIELD_VALUE(0, FB_ADDRESS, ADDRESS, pLogicalMode->baseAddress));
+	/* Frame buffer base */
+	pokeRegisterDWord((FB_ADDRESS + offset),
+			  FIELD_SET(0, FB_ADDRESS, STATUS, PENDING)
+			  | FIELD_VALUE(0, FB_ADDRESS, ADDRESS,
+					pLogicalMode->baseAddress));
 
 #endif
 
-
-    /* Pitch value (Hardware people calls it Offset) */
-    pokeRegisterDWord((FB_WIDTH+offset),
-          FIELD_VALUE(0, FB_WIDTH, WIDTH, pLogicalMode->pitch));
+	/* Pitch value (Hardware people calls it Offset) */
+	pokeRegisterDWord((FB_WIDTH + offset),
+			  FIELD_VALUE(0, FB_WIDTH, WIDTH, pLogicalMode->pitch));
 
     pokeRegisterDWord((HORIZONTAL_TOTAL+offset),
           FIELD_VALUE(0, HORIZONTAL_TOTAL, TOTAL, pModeParam->horizontal_total - 1)
@@ -928,78 +900,64 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
 		ulTmpValue =
 		    FIELD_SET(ulTmpValue, DISPLAY_CTRL, HDMI_SELECT, CHANNEL1);
 
+	pokeRegisterDWord((DISPLAY_CTRL + offset), ulTmpValue);
 
-    pokeRegisterDWord((DISPLAY_CTRL+offset), ulTmpValue);
+	/* Palette RAM. */
+	paletteRam = PALETTE_RAM + offset;
 
-    /* Palette RAM. */
-    paletteRam = PALETTE_RAM + offset;
-    
-    /* Save the current mode param */
-    if (pLogicalMode->dispCtrl == CHANNEL0_CTRL)
-        gChannel0CurrentModeParam = *pModeParam;
-    else
-        gChannel1CurrentModeParam = *pModeParam;
+	/* Save the current mode param */
+	if (pLogicalMode->dispCtrl == CHANNEL0_CTRL)
+		gChannel0CurrentModeParam = *pModeParam;
+	else
+		gChannel1CurrentModeParam = *pModeParam;
 
-    /* In case of 8-bpp, fill palette */
-    if (pLogicalMode->bpp==8)
-    {
-        /* Start with RGB = 0,0,0. */
-        unsigned char red = 0, green = 0, blue = 0;
-        unsigned long gray = 0;
-        for (offset = 0; offset < 256 * 4; offset += 4)
-        {
-            /* Store current RGB value. */
-            pokeRegisterDWord(paletteRam + offset, gray
-                                ? RGB((gray + 50) / 100,
-                                      (gray + 50) / 100,
-                                      (gray + 50) / 100)
-                                : RGB(red, green, blue));
+	/* In case of 8-bpp, fill palette */
+	if (pLogicalMode->bpp == 8) {
+		/* Start with RGB = 0,0,0. */
+		unsigned char red = 0, green = 0, blue = 0;
+		unsigned long gray = 0;
+		for (offset = 0; offset < 256 * 4; offset += 4) {
+			/* Store current RGB value. */
+			pokeRegisterDWord(paletteRam + offset, gray
+					  ? RGB((gray + 50) / 100,
+						(gray + 50) / 100,
+						(gray + 50) / 100)
+					  : RGB(red, green, blue));
 
-            if (gray)
-            {
-                /* Walk through grays (40 in total). */
-                gray += 654;
-            }
+			if (gray) {
+				/* Walk through grays (40 in total). */
+				gray += 654;
+			}
 
-            else
-            {
-                /* Walk through colors (6 per base color). */
-                if (blue != 255)
-                {
-                    blue += 51;
-                }
-                else if (green != 255)
-                {
-                    blue = 0;
-                    green += 51;
-                }
-                else if (red != 255)
-                {
-                    green = blue = 0;
-                    red += 51;
-                }
-                else
-                {
-                    gray = 1;
-                }
-            }
-        }
-    }
-    /* For 16- and 32-bpp,  fill palette with gamma values. */
-    else
-    {
-        /* Start with RGB = 0,0,0. */
-        ulTmpValue = 0x000000;
-        for (offset = 0; offset < 256 * 4; offset += 4)
-        {
-            pokeRegisterDWord(paletteRam + offset, ulTmpValue);
+			else {
+				/* Walk through colors (6 per base color). */
+				if (blue != 255) {
+					blue += 51;
+				} else if (green != 255) {
+					blue = 0;
+					green += 51;
+				} else if (red != 255) {
+					green = blue = 0;
+					red += 51;
+				} else {
+					gray = 1;
+				}
+			}
+		}
+	}
+	/* For 16- and 32-bpp,  fill palette with gamma values. */
+	else {
+		/* Start with RGB = 0,0,0. */
+		ulTmpValue = 0x000000;
+		for (offset = 0; offset < 256 * 4; offset += 4) {
+			pokeRegisterDWord(paletteRam + offset, ulTmpValue);
 
-            /* Advance RGB by 1,1,1. */
-            ulTmpValue += 0x010101;
-        }
-    }
+			/* Advance RGB by 1,1,1. */
+			ulTmpValue += 0x010101;
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -1016,63 +974,56 @@ pll_value_t *pPLL               /* Pre-calculated values for the PLL */
  * Return: 0 (or NO_ERROR) if mode can be set successfully.
  *         -1 if any set mode error.
  */
-long ddk768_setCustomMode(
-    logicalMode_t *pLogicalMode, 
-    mode_parameter_t *pUserModeParam
-)
+long ddk768_setCustomMode(logicalMode_t *pLogicalMode,
+			  mode_parameter_t *pUserModeParam)
 {
-    //mode_parameter_t pModeParam; /* physical parameters for the mode */
-    pll_value_t pll;
-    unsigned long ulActualPixelClk;
+	//mode_parameter_t pModeParam; /* physical parameters for the mode */
+	pll_value_t pll;
+	unsigned long ulActualPixelClk;
 
-    /*
-     * Minimum check on mode base address.
-     * At least it shouldn't be bigger than the size of frame buffer.
-     */
-    if (ddk768_getFrameBufSize() <= pLogicalMode->baseAddress)
-        return -1;
-	
-    /*
-     * Set up PLL, a structure to hold the value to be set in clocks.
-     */
+	/*
+	 * Minimum check on mode base address.
+	 * At least it shouldn't be bigger than the size of frame buffer.
+	 */
+	if (ddk768_getFrameBufSize() <= pLogicalMode->baseAddress)
+		return -1;
+
+	/*
+	 * Set up PLL, a structure to hold the value to be set in clocks.
+	 */
 	if (ddk768_getCrystalType())
-		pll.inputFreq = (24576000/2);
+		pll.inputFreq = (24576000 / 2);
 	else
-		pll.inputFreq = (24000000/2);
-	
-    /* 
-     * Call calcPllValue() to fill up the other fields for PLL structure.
-     * Sometime, the chip cannot set up the exact clock required by User.
-     * Return value from calcPllValue() gives the actual possible pixel clock.
-     */
-    ulActualPixelClk = ddk768_calcPllValue(pUserModeParam->pixel_clock, &pll);
-  
+		pll.inputFreq = (24000000 / 2);
 
+	/* 
+	 * Call calcPllValue() to fill up the other fields for PLL structure.
+	 * Sometime, the chip cannot set up the exact clock required by User.
+	 * Return value from calcPllValue() gives the actual possible pixel clock.
+	 */
+	ulActualPixelClk =
+	    ddk768_calcPllValue(pUserModeParam->pixel_clock, &pll);
 
+	/* If calling function don't have a preferred pitch value, 
+	   work out a 16 byte aligned pitch value.
+	 */
+	if (pLogicalMode->pitch == 0) {
+		/* 
+		 * Pitch value calculation in Bytes.
+		 * Usually, it is (screen width) * (byte per pixel).
+		 * However, there are cases that screen width is not 16 pixel aligned, which is
+		 * a requirement for some OS and the hardware itself.
+		 * For standard 4:3 resolutions: 320, 640, 800, 1024 and 1280, they are all
+		 * 16 pixel aligned and pitch is simply (screen width) * (byte per pixel).
+		 *   
+		 * However, 1366 resolution, for example, has to be adjusted for 16 pixel aligned.
+		 */
+		pLogicalMode->pitch = PITCH(pLogicalMode->x, pLogicalMode->bpp);
+	}
 
-    /* If calling function don't have a preferred pitch value, 
-       work out a 16 byte aligned pitch value.
-    */
-    if (pLogicalMode->pitch == 0)
-    {
-        /* 
-         * Pitch value calculation in Bytes.
-         * Usually, it is (screen width) * (byte per pixel).
-         * However, there are cases that screen width is not 16 pixel aligned, which is
-         * a requirement for some OS and the hardware itself.
-         * For standard 4:3 resolutions: 320, 640, 800, 1024 and 1280, they are all
-         * 16 pixel aligned and pitch is simply (screen width) * (byte per pixel).
-         *   
-         * However, 1366 resolution, for example, has to be adjusted for 16 pixel aligned.
-         */
-        pLogicalMode->pitch = PITCH(pLogicalMode->x, pLogicalMode->bpp);
-    }
-
-    /* Program the hardware to set up the mode. */
-    return( ddk768_programModeRegisters( 
-            pLogicalMode, 
-            pUserModeParam,
-            &pll));
+	/* Program the hardware to set up the mode. */
+	return (ddk768_programModeRegisters(pLogicalMode,
+					    pUserModeParam, &pll));
 }
 
 /*
@@ -1082,38 +1033,36 @@ long ddk768_setCustomMode(
  * Return: 0 (or NO_ERROR) if mode can be set successfully.
  *         -1 if any set mode error.
  */
-long ddk768_setModeEx(
-    logicalMode_t *pLogicalMode
-)
+long ddk768_setModeEx(logicalMode_t *pLogicalMode)
 {
-    mode_parameter_t *pModeParam;       /* physical parameters for the mode */
-    unsigned short index = 0;
-    userData_t *pUserData;
+	mode_parameter_t *pModeParam;	/* physical parameters for the mode */
+	unsigned short index = 0;
+	userData_t *pUserData;
 
-    /*
-     * Check the validity of the userData pointer and translate the information as necessary
-     */
-    pUserData = (userData_t *)pLogicalMode->userData;
-    if ((pUserData != (userData_t *)0) &&
-        (pUserData->signature == ddk768_getUserDataSignature()) &&
-        (pUserData->size == sizeof(userData_t)))
-    {
-        /* Interpret the userData information */
-        if (pUserData->paramList.size == sizeof(userDataParam_t))
-        {
-            if (pUserData->paramList.modeInfoID == MODE_INFO_INDEX)
-                index = pUserData->paramList.paramInfo.index;
-        }
-    }
-    
-    /* 
-     * Check if we already have physical timing parameter for this mode.
-     */
-    pModeParam = ddk768_findModeParam(pLogicalMode->dispCtrl, pLogicalMode->x, pLogicalMode->y, pLogicalMode->hz, index);
-    if (pModeParam == (mode_parameter_t *)0)
-        return -1;
+	/*
+	 * Check the validity of the userData pointer and translate the information as necessary
+	 */
+	pUserData = (userData_t *) pLogicalMode->userData;
+	if ((pUserData != (userData_t *) 0) &&
+	    (pUserData->signature == ddk768_getUserDataSignature()) &&
+	    (pUserData->size == sizeof(userData_t))) {
+		/* Interpret the userData information */
+		if (pUserData->paramList.size == sizeof(userDataParam_t)) {
+			if (pUserData->paramList.modeInfoID == MODE_INFO_INDEX)
+				index = pUserData->paramList.paramInfo.index;
+		}
+	}
 
-    return(ddk768_setCustomMode(pLogicalMode, pModeParam));
+	/* 
+	 * Check if we already have physical timing parameter for this mode.
+	 */
+	pModeParam =
+	    ddk768_findModeParam(pLogicalMode->dispCtrl, pLogicalMode->x,
+				 pLogicalMode->y, pLogicalMode->hz, index);
+	if (pModeParam == (mode_parameter_t *) 0)
+		return -1;
+
+	return (ddk768_setCustomMode(pLogicalMode, pModeParam));
 }
 
 /*
@@ -1124,13 +1073,10 @@ long ddk768_setModeEx(
  * Return: 0 (or NO_ERROR) if mode can be set successfully.
  *         -1 if any set mode error.
  */
-long ddk768_setMode(
-    logicalMode_t *pLogicalMode
-)
+long ddk768_setMode(logicalMode_t *pLogicalMode)
 {
-    pLogicalMode->userData = (void *)0;
+	pLogicalMode->userData = (void *)0;
 
-    /* Call the setModeEx to set the mode. */
-    return ddk768_setModeEx(pLogicalMode);
+	/* Call the setModeEx to set the mode. */
+	return ddk768_setModeEx(pLogicalMode);
 }
-

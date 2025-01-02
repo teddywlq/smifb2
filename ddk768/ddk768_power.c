@@ -1,11 +1,7 @@
 #include "ddk768_reg.h"
-
 #include "ddk768_chip.h"
 #include "ddk768_power.h"
-
 #include "ddk768_help.h"
-
-
 
 /*
  *  Enable/disable jpeg decoder 1.
@@ -128,7 +124,7 @@ void ddk768_enableUsbHost(unsigned long enable)
 /*
  *  Enable/disable USB 3 device
  */
-void ddk768_enableUsbDevice(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableUsbDevice(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -144,7 +140,7 @@ void ddk768_enableUsbDevice(unsigned long enable)
 /*
  *  Enable/disable jpeg decoder.
  */
-void ddk768_enableJPU(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableJPU(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -160,7 +156,7 @@ void ddk768_enableJPU(unsigned long enable)
 /*
  *	Enable/disable H264 video decoder.
  */ 
-void ddk768_enableVPU(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableVPU(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -177,7 +173,7 @@ void ddk768_enableVPU(unsigned long enable)
 /*
  *	Enable/disable UART
  */ 
-void ddk768_enableUART(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableUART(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -211,7 +207,7 @@ void ddk768_enableI2S(unsigned long enable)
 /*
  *	Enable/disable ARM
  */ 
-void ddk768_enableARM(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableARM(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -227,7 +223,7 @@ void ddk768_enableARM(unsigned long enable)
 /*
  *	Enable/disable display control 0
  */ 
-void ddk768_enableDC0(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableDC0(unsigned long enable)
 {
     unsigned long regValue;
 
@@ -243,7 +239,7 @@ void ddk768_enableDC0(unsigned long enable)
 /*
  *	Enable/disable display control 1
  */ 
-void ddk768_enableDC1(unsigned long enable)
+__attribute__((unused)) static void ddk768_enableDC1(unsigned long enable)
 {
     unsigned long regValue;
 

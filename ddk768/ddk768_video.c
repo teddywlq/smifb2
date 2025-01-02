@@ -115,7 +115,7 @@ unsigned short videoGetLineOffset()
  *  Input:
  *      bufferIndex - The index of the buffer which size to be retrieved
  */
-unsigned long videoGetBufferSize(
+static unsigned long videoGetBufferSize(
     unsigned long bufferIndex
 )
 {
@@ -159,7 +159,7 @@ unsigned long videoGetBuffer(
  *      bufferIndex         - The index of the buffer to be set
  *      bufferSize          - Size of the video buffer.
  */
-void videoSetBufferLastAddress(
+static void videoSetBufferLastAddress(
     unsigned char bufferIndex,          /* The index of the buffer to be set. */
     unsigned long bufferStart,          /* Buffer start */
     unsigned long bufferSize            /* Size of the video buffer */
@@ -196,7 +196,7 @@ void videoSetBufferLastAddress(
  *  Input:
  *      bufferIndex         - The index of the buffer last address to be retrieved
  */
-unsigned long videoGetBufferLastAddress(
+__attribute__((unused)) static unsigned long videoGetBufferLastAddress(
     unsigned char bufferIndex           /* The index of the buffer last address to be retrieved. */
 )
 {
@@ -522,7 +522,7 @@ void videoSetInitialScale(
  *      pbuffer0InitScale   - Pointer to variable to store buffer 0 initial vertical scale
  *      pbuffer1InitScale   - Pointer to variable to store buffer 1 initial vertical scale
  */
-void videoGetInitialScale(
+__attribute__((unused)) static void videoGetInitialScale(
 	unsigned dispCtrl,
     unsigned short *pBufferVInitScale,
     unsigned short *pBufferHInitScale
@@ -548,7 +548,7 @@ void videoGetInitialScale(
  *      dstWidth     - The destination video width 
  *      dstHeight    - The destination video height
  */
-void videoScale(
+static void videoScale(
 	unsigned dispCtrl,
     unsigned long srcWidth,
     unsigned long srcHeight,
