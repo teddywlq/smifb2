@@ -258,10 +258,11 @@ malloc_failed:
 
 static void smi_vram_resume(struct smi_device *sdev,int vram_size)
 {
-
-	memcpy_toio(sdev->vram, sdev->vram_save, vram_size << 20);
-	kvfree(sdev->vram_save); 		
-	sdev->vram_save = NULL; 	
+	if (sdev->vram_save) {		
+		memcpy_toio(sdev->vram, sdev->vram_save, vram_size << 20);
+		kvfree(sdev->vram_save); 		
+		sdev->vram_save = NULL; 
+	}
 }
 
 

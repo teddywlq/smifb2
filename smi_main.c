@@ -584,10 +584,6 @@ void smi_gem_free_object(struct drm_gem_object *obj)
 /* Unmap the framebuffer from the core and release the memory */
 static void smi_vram_fini(struct smi_device *cdev)
 {
-	iounmap(cdev->rmmio);
-	iounmap(cdev->vram);
-	cdev->rmmio = NULL;
-	cdev->vram = NULL;
 
 }
 
@@ -606,13 +602,19 @@ static int smi_vram_init(struct smi_device *cdev)
 		cdev->vram_size = ddk768_getFrameBufSize();
 
 #ifdef NO_WC
-	cdev->vram = ioremap(cdev->vram_base,cdev->vram_size);
-#else
-	cdev->vram = ioremap_wc(cdev->vram_base,cdev->vram_size);
-#endif
 
-	if (cdev->vram == NULL)
-		return -ENOMEM;
+	cdev->vram = devm_ioremap(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+	 if (!cdev->vram)
+                return -ENOMEM;
+#else
+	
+	cdev->vram = devm_ioremap_wc(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+	 if (!cdev->vram)
+                return -ENOMEM;
+
+	/* Don't fail on errors, but performance might be reduced. */
+	devm_arch_phys_wc_add(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+#endif
 
 	return 0;
 }
@@ -659,7 +661,7 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 	/* BAR 0 is the framebuffer, BAR 1 contains registers */
 	cdev->rmmio_base = pci_resource_start(pdev, 1);
 	cdev->rmmio_size = pci_resource_len(pdev, 1);
-	cdev->rmmio = ioremap(cdev->rmmio_base, cdev->rmmio_size);
+	cdev->rmmio = devm_ioremap(cdev->dev->dev, cdev->rmmio_base, cdev->rmmio_size);
 
 	if (cdev->rmmio == NULL)
 		return -ENOMEM;
