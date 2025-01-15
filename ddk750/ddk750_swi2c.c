@@ -801,3 +801,22 @@ long ddk750_AdaptSWI2CInit(struct smi_connector *smi_connector)
     return 0;
 }
 
+/* After closing HW I2C, give a SCL clk by SW to avoid the deadlock */
+long ddk750_AdapSWI2CCleanBus(
+    struct smi_connector *connector)
+{
+    unsigned char i2cClkGPIO = connector->i2c_scl;
+    unsigned char i2cDataGPIO = connector->i2c_sda;
+
+    if (adapterI2CInit(i2cClkGPIO, i2cDataGPIO))
+        return (-1);
+
+    udelay(20);
+    swI2CSCL(0);
+    udelay(20);
+    swI2CSCL(1);
+    udelay(20);
+
+    return 0;
+}
+

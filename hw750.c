@@ -381,6 +381,10 @@ long hw750_AdaptI2CCleanBus(struct drm_connector *connector)
     {
         return ddk750_AdaptHWI2CCleanBus(smi_connector);
     }
+    else
+    {
+        return ddk750_AdapSWI2CCleanBus(smi_connector); 
+    }
 
     return 0;
 }

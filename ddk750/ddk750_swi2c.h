@@ -105,6 +105,7 @@ void swI2CSDA(unsigned char value);
 
 long ddk750_AdaptSWI2CInit(struct smi_connector *smi_connector);
 
+long ddk750_AdapSWI2CCleanBus(struct smi_connector *connector);
 
 
 #endif  /* _SWI2C_H_ */

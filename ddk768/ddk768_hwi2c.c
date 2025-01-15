@@ -23,23 +23,42 @@ static int ddk768_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
     struct smi_connector *connector = i2c_get_adapdata(adap);
     unsigned char i2cNumber = connector->i2cNumber;
     unsigned long ret;
-    int i, count = 0;
+    int i = 0;
 
     if(i2cNumber > 1)
     {
         return -EOPNOTSUPP;
     }
-    for (i = 0; i < (num - 1); i++)
-        if (msgs[i].flags & I2C_M_RD)
-        {
-            pr_err("only one read message supported, has to be last\n");
-            return -EOPNOTSUPP;
-        }
 
-    while (msgs->len && (count < num))
-    {
-	    msgs->addr = msgs->addr << 1;
-        if (!(msgs->flags & I2C_M_RD))
+     for (i = 0; i < num; i++) {
+		if (msgs[i].len == 0) {
+			pr_err("unsupported transfer %d/%d, no data\n",
+				i + 1, num);
+			return -EOPNOTSUPP;
+		}
+	}
+
+
+     for (i = 0; i < num; i++)
+     {
+		msgs->addr = msgs->addr << 1;
+
+        if (msgs->flags & I2C_M_RD)
+        {
+
+		    ret = hwI2CReadData(
+	                i2cNumber, // I2C0 or I2C1
+	                msgs->addr,
+	                msgs->len,
+	                msgs->buf); 
+		    if (ret < msgs->len)
+	            {
+					ret = 0;
+	                pr_err("ddk768 i2c xfer rx failed %ld.\n", ret);
+	                break;
+	            }
+	    }
+        else
         {
             ret = hwI2CWriteData(
                 i2cNumber, // I2C0 or I2C1
@@ -48,35 +67,20 @@ static int ddk768_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[],
                 msgs->buf);
             if (ret < msgs->len)
             {
+				ret = 0;
                 pr_err("ddk768 i2c xfer tx failed %ld.\n", ret);
                 break;
             }
         }
-        else
-        {
-            ret = hwI2CReadData(
-                i2cNumber, // I2C0 or I2C1
-                msgs->addr,
-                msgs->len,
-                msgs->buf);
-            if (ret < msgs->len)
-            {
-                pr_err("ddk768 i2c xfer rx failed %ld.\n", ret);
-                break;
-            }
-        }
 
-        msgs++;
-        count++;
+    	msgs++;
     }
 
-    if (count < num)
-    {
-        pr_err("ddk768 i2c xfer failed %d(%d).\n", count, num);
-        return -EIO;
-    }
+     if (ret)
+	 	ret = num;
 
-    return num;
+        return ret;
+
 }
 
 static u32 ddk768_i2c_func(struct i2c_adapter *adap)

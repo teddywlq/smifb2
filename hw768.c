@@ -473,13 +473,17 @@ long hw768_AdaptI2CInit(struct smi_connector *smi_connector)
 	case DRM_MODE_CONNECTOR_DVII:
 	case DRM_MODE_CONNECTOR_VGA:
 	    if(hwi2c_en){
+			smi_connector->i2c_hw_enabled = 1;
 			return ddk768_AdaptHWI2CInit(smi_connector);
 		}
 		break;
 	case DRM_MODE_CONNECTOR_HDMIA:
+	default:
 		break;
 
    }
+	smi_connector->i2c_hw_enabled = 0; 
+	
 	return ddk768_AdaptSWI2CInit(smi_connector); 
 
 }
