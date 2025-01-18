@@ -638,9 +638,9 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 {
 #ifdef USE_HDMICHIP
 	int ret = 0;
+	void *edid_buf = NULL;
 #endif
 	int count = 0;
-	void *edid_buf = NULL;
 	struct smi_device *sdev = connector->dev->dev_private;
 	struct smi_connector *smi_connector = to_smi_connector(connector);
 
@@ -679,16 +679,19 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 
 
 #else
-			edid_buf = drm_get_edid(connector, &smi_connector->adapter);
+			if(!hwi2c_en)
+			{
+				sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+			}
 
-			if(edid_buf)
+			if(sdev->dvi_edid)
 			{
 				dbg_msg("DVI get edid success.\n");
-				sdev->dvi_edid = edid_buf;
+
 				drm_connector_update_edid_property(connector, sdev->dvi_edid);
 				count = drm_add_edid_modes(connector, sdev->dvi_edid);
 			}
-			if (edid_buf == NULL || count == 0)
+			if (sdev->dvi_edid == NULL || count == 0)
 			{
 				drm_connector_update_edid_property(connector, NULL);
 				count = drm_add_modes_noedid(connector, 1920, 1080);
@@ -699,21 +702,18 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 		}
 		if(connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
-			edid_buf = drm_get_edid(connector, &smi_connector->adapter);
-
 		
-			
-		
+			sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
 
-			if(edid_buf){
+			if(sdev->vga_edid){
+
 			    dbg_msg("VGA get edid success.\n");
-				sdev->vga_edid = edid_buf;
 			
 				drm_connector_update_edid_property(connector, sdev->vga_edid); 
 
 				count = drm_add_edid_modes(connector, sdev->vga_edid);
 			}
-			if (edid_buf == NULL || count == 0)
+			if (sdev->vga_edid == NULL || count == 0)
 			{
 
 				drm_connector_update_edid_property(connector, NULL);
@@ -735,22 +735,23 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 
 				count = drm_add_modes_noedid(connector, fixed_width, fixed_height);
 				drm_set_preferred_mode(connector, fixed_width, fixed_height);
-			}else{
-			
-				edid_buf = drm_get_edid(connector, &smi_connector->adapter);
+			}
+			else
+			{
+				if(!hwi2c_en)
+				{
+				    sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+				}
 
-
-
-				if(edid_buf){
+				if(sdev->dvi_edid)
+				{
 					dbg_msg("DVI get edid success.\n");
-					sdev->dvi_edid = edid_buf;
 
 					drm_connector_update_edid_property(connector, sdev->dvi_edid); 
 
 					count = drm_add_edid_modes(connector, sdev->dvi_edid);
 				}
-		
-				if (edid_buf == NULL || count == 0)
+				if (sdev->dvi_edid == NULL || count == 0)
 				{
 
 					drm_connector_update_edid_property(connector, NULL);
@@ -763,39 +764,41 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 		}
 		if(connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
-			edid_buf = drm_get_edid(connector, &smi_connector->adapter);
 
-			if (edid_buf)
+			if(!hwi2c_en)
 			{
-				dbg_msg("VGA get edid success.\n");
-				sdev->vga_edid = edid_buf;
+				sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
+			}
+
+			if(sdev->vga_edid)
+			{
+			    dbg_msg("VGA get edid success.\n");
+
 				drm_connector_update_edid_property(connector, sdev->vga_edid);
 				count = drm_add_edid_modes(connector, sdev->vga_edid);
 			}
-			if (edid_buf == NULL || count == 0)
-			{
 
+			if (sdev->vga_edid == NULL || count == 0)
+			{
 				drm_connector_update_edid_property(connector, NULL);
 				count = drm_add_modes_noedid(connector, 1920, 1080);
 				drm_set_preferred_mode(connector, fixed_width, fixed_height);
 			}
-
 		}
 		if(connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
 		{
-			edid_buf = drm_get_edid(connector, &smi_connector->adapter);
 
+			sdev->hdmi_edid = drm_get_edid(connector, &smi_connector->adapter);
             //hw768_get_hdmi_edid(tmpedid);   // Too Slow..
-			if (edid_buf)
+			if (sdev->hdmi_edid)
 			{
 				dbg_msg("HDMIA get edid success.\n");
-				sdev->hdmi_edid = edid_buf;
 				drm_connector_update_edid_property(connector, sdev->hdmi_edid);		
 				count = drm_add_edid_modes(connector, sdev->hdmi_edid);
 				sdev->is_hdmi = drm_detect_hdmi_monitor(sdev->hdmi_edid);
                 dbg_msg("HDMI connector is %s\n",(sdev->is_hdmi ? "HDMI monitor" : "DVI monitor"));
 			}
-			if (edid_buf == NULL || count == 0)
+			if (sdev->hdmi_edid == NULL || count == 0)
 			{
 				drm_connector_update_edid_property(connector, NULL);
 				count = drm_add_modes_noedid(connector, 1920, 1080);
@@ -871,6 +874,7 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 	int ret = 0;
 	void *edid_buf;
 #endif
+	unsigned int mon_detect = 0;
 
 	if (sdev->specId == SPC_SM750)
 	{
@@ -898,18 +902,36 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 				return connector_status_disconnected;
 			}
 #endif
-
-			if (!drm_probe_ddc(&smi_connector->adapter))
-
+			if (hwi2c_en)
 			{
-				dbg_msg("detect DVI/Panel DO NOT connected.\n");
-				return connector_status_disconnected;
+                sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+
+            	if (sdev->dvi_edid)
+				{
+                 	if (drm_edid_header_is_valid(sdev->dvi_edid) > 6) 
+
+						mon_detect = 1;
+			    }
+
 			}
-			else
+            else
+			{
+				if (drm_probe_ddc(&smi_connector->adapter))
+	
+					mon_detect = 1;
+			}
+
+			if (mon_detect)
 			{
 				dbg_msg("detect DVI/Panel connected.\n");
 				return connector_status_connected;
 			}
+			else
+			{
+				dbg_msg("detect DVI/Panel DO NOT connected.\n");
+				return connector_status_disconnected;
+			}
+			
 		}
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
@@ -948,19 +970,37 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 					return connector_status_disconnected;
 			}
 
-			if (!drm_probe_ddc(&smi_connector->adapter))
+			if (hwi2c_en)
 			{
-				dbg_msg("detect DVI DO NOT connected. \n");
-				sdev->m_connector = sdev->m_connector & (~USE_DVI);
-				return connector_status_disconnected; 
+                sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+
+            	if (sdev->dvi_edid)
+				{
+                 	if (drm_edid_header_is_valid(sdev->dvi_edid) > 6) 
+
+						mon_detect = 1;
+			    }
 			}
-			else
+            else
+			{
+				if (drm_probe_ddc(&smi_connector->adapter))
+
+					mon_detect = 1;
+			}
+
+			if (mon_detect)
 			{
 				dbg_msg("detect DVI connected(GPIO30,31)\n");
 				sdev->m_connector =sdev->m_connector |USE_DVI;
 				return connector_status_connected;
 			}
-
+			else
+			{
+				dbg_msg("detect DVI DO NOT connected. \n");
+				sdev->m_connector =sdev->m_connector & (~USE_DVI);
+				return connector_status_disconnected;
+			}
+				 
 		}
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
@@ -971,20 +1011,39 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 					sdev->m_connector = sdev->m_connector & (~USE_VGA);
 					return connector_status_disconnected;
 			}
-
-			if (!drm_probe_ddc(&smi_connector->adapter))
+			
+			if (hwi2c_en)
 			{
-				dbg_msg("detect CRT DO NOT connected. \n");
-				sdev->m_connector =sdev->m_connector&(~USE_VGA);
-				return connector_status_disconnected;
+				sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
+		
+           		if (sdev->vga_edid) 
+				{
+                	if (drm_edid_header_is_valid(sdev->vga_edid) > 6)
+
+                    	mon_detect = 1;
+            	}
+
 			}
 			else
+			{
+				if (drm_probe_ddc(&smi_connector->adapter))
+
+					mon_detect = 1;			
+			}
+
+			if (mon_detect)
 			{
 				dbg_msg("detect CRT connected(GPIO 6, 7)\n");
 				sdev->m_connector = sdev->m_connector|USE_VGA;
 				return connector_status_connected;
 			}
-		
+			else
+			{
+				dbg_msg("detect CRT DO NOT connected. \n");
+				sdev->m_connector = sdev->m_connector&(~USE_VGA);
+				return connector_status_disconnected;
+			}
+
 		}
 		else if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA)
 		{
