@@ -155,7 +155,7 @@ static const struct file_operations reg_fops = {
 	debugfs_create_u32("nopnp", S_IRUGO | S_IWUSR, minor->debugfs_root, &force_connect);
 
 
-	regs = kzalloc(REGS_SIZE * sizeof(struct debugfs_reg32));
+	regs = vzalloc(REGS_SIZE * sizeof(struct debugfs_reg32));
 	if(!regs) {
 		goto DEBUGFS_FAIL;
 	}
