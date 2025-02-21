@@ -28,7 +28,10 @@
 #include <drm/drm_vblank.h>
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+#include <linux/aperture.h>
+#include <drm/drm_client_setup.h>
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 #include <drm/drm_aperture.h>
 #endif
 
@@ -144,7 +147,9 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+	aperture_remove_conflicting_pci_devices(pdev, driver.name);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	drm_aperture_remove_conflicting_pci_framebuffers(pdev, &driver);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 	drm_aperture_remove_conflicting_pci_framebuffers(pdev, "smidrmfb");
@@ -195,7 +200,9 @@ static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 #else
 	if ((sdev->specId == SPC_SM750 && (pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW)) || sdev->specId == SPC_SM768)
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+	    drm_client_setup(dev, NULL);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
 		drm_fbdev_ttm_setup(dev, dev->mode_config.preferred_depth);
 #else
 		drm_fbdev_generic_setup(dev, dev->mode_config.preferred_depth);
@@ -596,7 +603,9 @@ static struct drm_driver driver = {
 	.debugfs_init = smi_debugfs_init,
 #endif
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+	DRM_FBDEV_TTM_DRIVER_OPS,
+#endif
 };
 
 static int __init smi_init(void)

@@ -57,7 +57,9 @@ static const struct drm_mode_config_helper_funcs smi_mode_config_helper_funcs = 
 
 static const struct drm_mode_config_funcs smi_mode_config_funcs = {
 	.fb_create = smi_user_framebuffer_create,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 12, 0)
 	.output_poll_changed = drm_fb_helper_output_poll_changed,
+#endif
 	.atomic_check = drm_atomic_helper_check,
 	.atomic_commit = drm_atomic_helper_commit,
 };
