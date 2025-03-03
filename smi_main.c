@@ -609,15 +609,20 @@ static int smi_vram_init(struct smi_device *cdev)
 	 if (!cdev->vram)
                 return -ENOMEM;
 #else
-	
-	cdev->vram = devm_ioremap_wc(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
-	 if (!cdev->vram)
+
+  cdev->vram = devm_ioremap_wc(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+     if (!cdev->vram)
                 return -ENOMEM;
-
-	/* Don't fail on errors, but performance might be reduced. */
-	devm_arch_phys_wc_add(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+ 
+    /* Don't fail on errors, but performance might be reduced. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+    devm_arch_phys_wc_add(cdev->dev->dev, cdev->vram_base, cdev->vram_size);
+#else
+    if (arch_phys_wc_add(cdev->vram_base, cdev->vram_size) != 0) {
+        printk(KERN_ERR "arch_phys_wc_add failed \n");
+    }
 #endif
-
+#endif
 	return 0;
 }
 
