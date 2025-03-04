@@ -30,7 +30,11 @@
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
 #include <linux/aperture.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
+#include <drm/clients/drm_client_setup.h>
+#else
 #include <drm/drm_client_setup.h>
+#endif
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
 #include <drm/drm_aperture.h>
 #endif
