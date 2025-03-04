@@ -1304,7 +1304,7 @@ __attribute__((unused)) static long ddk750_edidReadMonitor(
  *  Output:
  *      0 get header success; -1 fail.
  */
-__attribute__((unused)) static unsigned char ddk750_edidGetHeader(
+unsigned char ddk750_edidGetHeader(
     unsigned char *pEDIDBuffer
 )
 {
@@ -1387,7 +1387,7 @@ __attribute__((unused)) static long ddk750_edidHeaderReadMonitorEx(
     return 0;
 }
 
-__attribute__((unused)) static long ddk750_edidHeaderReadMonitorExHwI2C(void)
+long ddk750_edidHeaderReadMonitorExHwI2C(void)
 {
     unsigned char retry;//value,
     unsigned char edidBuffer[10];
@@ -1410,7 +1410,7 @@ __attribute__((unused)) static long ddk750_edidHeaderReadMonitorExHwI2C(void)
     }
 
 	/* Finish using HW I2C, we can close the device. */
-    ddk750_hwI2CClose();
+    //ddk750_hwI2CClose();
 
     /*
      *  The monitor might not be DDC2B compliance. Therefore, need to use DDC1 protocol,
@@ -1423,10 +1423,10 @@ __attribute__((unused)) static long ddk750_edidHeaderReadMonitorExHwI2C(void)
          * only an acknowledge flag, which could be high or low. However, SCL line
          * is not used. Instead the data is clock-in using vertical sync.
          */
-        return (-1);
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 

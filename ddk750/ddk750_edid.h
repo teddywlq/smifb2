@@ -500,6 +500,22 @@ long ddk750_edidReadMonitorEx_HW(
     unsigned char edidExtNo
 );
 
+/*
+ *  edidGetHeader
+ *      This function gets the EDID Header
+ *
+ *  Input:
+ *      pEDIDBuffer - Buffer that contains the EDID structure of the monitor
+ *
+ *  Output:
+ *      0 get header success; -1 fail.
+ */
+unsigned char ddk750_edidGetHeader(
+    unsigned char *pEDIDBuffer
+);
+
+long ddk750_edidHeaderReadMonitorExHwI2C(void);
+
 
 /*
  *  edidGetEstablishedTiming

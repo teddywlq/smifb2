@@ -679,10 +679,10 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 
 
 #else
-			if(!hwi2c_en)
-			{
-				sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
-			}
+		
+
+		    sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+
 
 			if(sdev->dvi_edid)
 			{
@@ -738,10 +738,9 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 			}
 			else
 			{
-				if(!hwi2c_en)
-				{
-				    sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
-				}
+
+			    sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
+
 
 				if(sdev->dvi_edid)
 				{
@@ -765,10 +764,9 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 		if(connector->connector_type == DRM_MODE_CONNECTOR_VGA)
 		{
 
-			if(!hwi2c_en)
-			{
-				sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
-			}
+		
+		    sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
+
 
 			if(sdev->vga_edid)
 			{
@@ -817,7 +815,7 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 				 struct drm_display_mode *mode)
 {
 	struct smi_device *sdev = connector->dev->dev_private;
-	
+
 	u32 vrefresh = drm_mode_vrefresh(mode);	
 	
 	if ((vrefresh < 29) || (vrefresh > 61) || (vrefresh > 31 && vrefresh < 59)){  
@@ -869,12 +867,11 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 {
 	struct smi_connector *smi_connector = to_smi_connector(connector);
 	struct smi_device *sdev = connector->dev->dev_private;
-		
+	int ret = 0;	
 #ifdef USE_HDMICHIP
-	int ret = 0;
+
 	void *edid_buf;
 #endif
-	unsigned int mon_detect = 0;
 
 	if (sdev->specId == SPC_SM750)
 	{
@@ -903,25 +900,13 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 			}
 #endif
 			if (hwi2c_en)
-			{
-                sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
 
-            	if (sdev->dvi_edid)
-				{
-                 	if (drm_edid_header_is_valid(sdev->dvi_edid) > 6) 
+                ret = ddk750_edidHeaderReadMonitorExHwI2C();
 
-						mon_detect = 1;
-			    }
-
-			}
             else
-			{
-				if (drm_probe_ddc(&smi_connector->adapter))
-	
-					mon_detect = 1;
-			}
+				ret = drm_probe_ddc(&smi_connector->adapter);
 
-			if (mon_detect)
+			if (ret)
 			{
 				dbg_msg("detect DVI/Panel connected.\n");
 				return connector_status_connected;
@@ -969,26 +954,13 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 					sdev->m_connector = sdev->m_connector & (~USE_DVI);
 					return connector_status_disconnected;
 			}
-
+			
 			if (hwi2c_en)
-			{
-                sdev->dvi_edid = drm_get_edid(connector, &smi_connector->adapter);
-
-            	if (sdev->dvi_edid)
-				{
-                 	if (drm_edid_header_is_valid(sdev->dvi_edid) > 6) 
-
-						mon_detect = 1;
-			    }
-			}
+                ret = ddk768_edidHeaderReadMonitorExHwI2C(0);
             else
-			{
-				if (drm_probe_ddc(&smi_connector->adapter))
+				ret = drm_probe_ddc(&smi_connector->adapter);
 
-					mon_detect = 1;
-			}
-
-			if (mon_detect)
+			if (ret)
 			{
 				dbg_msg("detect DVI connected(GPIO30,31)\n");
 				sdev->m_connector =sdev->m_connector |USE_DVI;
@@ -1013,25 +985,11 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 			}
 			
 			if (hwi2c_en)
-			{
-				sdev->vga_edid = drm_get_edid(connector, &smi_connector->adapter);
-		
-           		if (sdev->vga_edid) 
-				{
-                	if (drm_edid_header_is_valid(sdev->vga_edid) > 6)
-
-                    	mon_detect = 1;
-            	}
-
-			}
+			    ret = ddk768_edidHeaderReadMonitorExHwI2C(1);
 			else
-			{
-				if (drm_probe_ddc(&smi_connector->adapter))
+				ret = drm_probe_ddc(&smi_connector->adapter);	
 
-					mon_detect = 1;			
-			}
-
-			if (mon_detect)
+			if (ret)
 			{
 				dbg_msg("detect CRT connected(GPIO 6, 7)\n");
 				sdev->m_connector = sdev->m_connector|USE_VGA;

@@ -438,6 +438,30 @@ long ddk768_edidGetWhitePoint(
 );
 
 /*
+ *  This function is same as editReadMonitorEx(), but using HW I2C.
+ *
+ *  Input:
+ *      pEDIDBuffer - Buffer that contains the EDID structure of the monitor
+ *      bufferSize  - The EDID Buffer size index (usually 128-bytes)
+ *      edidExtNo   - Extension Index of the EDID Structure to be read
+ *      i2cNumber   - 0 = I2C0 and 1 = I2C1
+ *
+ *  Output:
+ *      0   - Fail
+ *     edidSize   - Success and return the edid's size.
+ */
+long ddk768_edidReadMonitorExHwI2C(
+    unsigned char *pEDIDBuffer,
+    unsigned long bufferSize,
+    unsigned char edidExtNo,
+    unsigned char i2cNumber
+);
+
+long ddk768_edidHeaderReadMonitorExHwI2C(
+    unsigned char i2cNumber
+);
+
+/*
  *  ddk768_edidGetExtension
  *      This function gets the number of (optional) EDID extension blocks to follow
  *      the given EDID buffer.
