@@ -1181,6 +1181,8 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
     writeHDMIControlRegister (PowerMode);
     DelayMs(10);    // wait 10ms
 
+    HDMI_Audio_Reset();
+
     if (AudioMode)
     {
         // enable video & audio output: write 00b to #45h[1:0]
@@ -1188,8 +1190,6 @@ long HDMI_Set_Mode (logicalMode_t *pLogicalMode, mode_parameter_t *pModeParam, b
         temp &= 0xFB;
         writeHDMIRegister(X45_VIDEO2, (temp & 0xFC));
         
-		HDMI_Audio_Reset();
-
     }
     else
     {
@@ -1209,8 +1209,6 @@ void HDMI_Enable_Output(void)
 {
     unsigned char temp = 0;
 
-	if (PowerMode == PowerMode_E)
-		return;
 
 	if (PowerMode == PowerMode_B){
 	    // mode b->d: (0x4d, 100us) -> (0x49, 100us) -> 0x41
