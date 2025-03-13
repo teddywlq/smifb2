@@ -66,22 +66,12 @@ static mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mod
 
 void hw768_enable_lvds(int channels)
 {
-	if(channels == 1){	
-		pokeRegisterDWord(0x80020,0x31E30000);		
-		pokeRegisterDWord(0x8002C,0x74001200);
-	}else{
-		unsigned long value = 0;
-		pokeRegisterDWord(0x80020, 0x31E3F71D);
-		pokeRegisterDWord(0x8002C,0x750FED02);
-		value = peekRegisterDWord(DISPLAY_CTRL);
-		value = FIELD_SET(value, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
-		value = FIELD_SET(value, DISPLAY_CTRL, PIXEL_CLOCK_SELECT, HALF);
-		value = FIELD_SET(value, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, ENABLE);
-		pokeRegisterDWord(DISPLAY_CTRL,value);
 
-		value = peekRegisterDWord(DISPLAY_CTRL + CHANNEL_OFFSET);
-		value = FIELD_SET(value, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
-		pokeRegisterDWord(DISPLAY_CTRL + CHANNEL_OFFSET,value);
+	if(channels == 1){	
+		setSingleLVDS(0);
+
+	}else{
+		set48bitLVDS(0);
 	}
 	
 	

@@ -322,11 +322,15 @@ static int smi_drm_thaw(struct drm_device *dev)
 		if(audio_en)
 			smi_audio_resume();
 #endif
-		if (lvds_channel == 1)
-			hw768_enable_lvds(1);
-		else if (lvds_channel == 2) {
-			hw768_enable_lvds(2);
-			EnableDoublePixel(0);
+		if(sdev->m_connector & USE_DVI){
+			if (lvds_channel == 1){
+				hw768_enable_lvds(1);
+				DisableDoublePixel(0);
+			}
+			else if (lvds_channel == 2) {
+				hw768_enable_lvds(2);
+				EnableDoublePixel(0);
+			}
 		}
 	}
 

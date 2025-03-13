@@ -706,19 +706,20 @@ long set48bitLVDS(disp_control_t dataPath)
                & FIELD_CLEAR(DISPLAY_CTRL, PIXEL_CLOCK_SELECT)
                & FIELD_CLEAR(DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK);
 
+
 	// Program 0x80000
 	// bit 17:16 = 10 binary
 	// bit 15 = 1
 	// bit 11 = 1
 	if (offset)
-    	ulTmpValue |= FIELD_SET(0, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_48BIT);
+    	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_48BIT);
 	else
-    	ulTmpValue |= FIELD_SET(0, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
+    	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
 
-	ulTmpValue |=
-        FIELD_SET(0, DISPLAY_CTRL, PIXEL_CLOCK_SELECT, HALF)
-      | FIELD_SET(0, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, ENABLE);
+	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, PIXEL_CLOCK_SELECT, HALF);
+    ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK, ENABLE);
 
+	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, CLOCK_PHASE, ACTIVE_LOW); ////DP and dual chanel LVDS shuold set to low
 
     pokeRegisterDWord(DISPLAY_CTRL+offset, ulTmpValue);
 
@@ -729,7 +730,7 @@ long set48bitLVDS(disp_control_t dataPath)
 
 		// Program 0x80000
 		// bit 17:16 = 3
-    	ulTmpValue |=  FIELD_SET(0, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_48BIT);
+    	ulTmpValue =  FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_48BIT);
 
     	pokeRegisterDWord(DISPLAY_CTRL, ulTmpValue);
 	}
@@ -739,7 +740,7 @@ long set48bitLVDS(disp_control_t dataPath)
 
 		// Program 0x88000
 		// bit 17:16 = 2
-    	ulTmpValue |=  FIELD_SET(0, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
+    	ulTmpValue =  FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_48BIT);
 
     	pokeRegisterDWord(DISPLAY_CTRL+CHANNEL_OFFSET, ulTmpValue);
 	}
@@ -765,5 +766,81 @@ long set48bitLVDS(disp_control_t dataPath)
 
 	return 0;
 }
+
+
+
+/*
+ *  Set up Single LVDS output with the input DC channel.
+ */
+long setSingleLVDS(disp_control_t dataPath)
+{
+    unsigned long ulTmpValue;
+    unsigned long offset;
+
+    offset = (dataPath==CHANNEL0_CTRL)? 0 : CHANNEL_OFFSET;
+
+	// Set Display Control for dual lvds 
+    ulTmpValue = peekRegisterDWord(DISPLAY_CTRL+offset)
+               & FIELD_CLEAR(DISPLAY_CTRL, LVDS_OUTPUT_FORMAT)
+               & FIELD_CLEAR(DISPLAY_CTRL, PIXEL_CLOCK_SELECT)
+               & FIELD_CLEAR(DISPLAY_CTRL, DOUBLE_PIXEL_CLOCK);
+
+	// Program 0x80000
+	// bit 17:16 = 10 binary
+	// bit 15 = 1
+	// bit 11 = 1
+	if (offset)
+    	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_24BIT);
+	else
+    	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_24BIT);
+
+
+	ulTmpValue = FIELD_SET(ulTmpValue, DISPLAY_CTRL, CLOCK_PHASE, ACTIVE_HIGH); //others should set to high
+    pokeRegisterDWord(DISPLAY_CTRL+offset, ulTmpValue);
+
+	// For 48 bit output, the other channel has to set up properly as well.
+	if (offset) //If data path is DC1, set DC0
+	{
+    	ulTmpValue = peekRegisterDWord(DISPLAY_CTRL) & FIELD_CLEAR(DISPLAY_CTRL, LVDS_OUTPUT_FORMAT);
+
+		// Program 0x80000
+		// bit 17:16 = 3
+    	ulTmpValue =  FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL1_24BIT);
+
+    	pokeRegisterDWord(DISPLAY_CTRL, ulTmpValue);
+	}
+	else // If data path is DC0, set DC1
+	{
+    	ulTmpValue = peekRegisterDWord(DISPLAY_CTRL+CHANNEL_OFFSET) & FIELD_CLEAR(DISPLAY_CTRL, LVDS_OUTPUT_FORMAT);
+
+		// Program 0x88000
+		// bit 17:16 = 2
+    	ulTmpValue =  FIELD_SET(ulTmpValue, DISPLAY_CTRL, LVDS_OUTPUT_FORMAT, CHANNEL0_24BIT);
+
+    	pokeRegisterDWord(DISPLAY_CTRL+CHANNEL_OFFSET, ulTmpValue);
+	}
+
+	/* Set LVDS clock polarity */
+	// Program 0x80024
+	// bit 26 = 0
+    ulTmpValue = peekRegisterDWord(CRT_DETECT+offset)
+               & FIELD_CLEAR(CRT_DETECT, LVDS_CLK);
+
+	//printf( "0x80024 = %08x\n", ulTmpValue);
+    pokeRegisterDWord(CRT_DETECT+offset, ulTmpValue);
+
+	setupLVDS(3);
+
+	//Wait for LVDS PLL to settle before enable it.
+    waitDispVerticalSync(dataPath, 3);
+
+	// program 0x8002c again
+	//bit 31:0 = 0x750fed02
+	enableLVDS(1, 1);
+	enableLVDS(2, 1);
+
+	return 0;
+}
+
 
 

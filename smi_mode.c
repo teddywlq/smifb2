@@ -90,7 +90,10 @@ static int smi_crtc_gamma_set(struct drm_crtc *crtc, u16 *r, u16 *g,
 
 
 	if (sdev->specId == SPC_SM768) {
-		hw768_setgamma(dst_ctrl, true , lvds_channel);
+		if(sdev->m_connector & USE_DVI)
+			hw768_setgamma(dst_ctrl, true , lvds_channel);
+		else
+			hw768_setgamma(dst_ctrl, true , 0);
 		hw768_load_lut(dst_ctrl, crtc->gamma_size, smi_crtc->lut_r, smi_crtc->lut_g, smi_crtc->lut_b);
 	
 	}else if(sdev->specId == SPC_SM750) {
@@ -298,15 +301,17 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 			}
 		}
 		
-
-		if(lvds_channel == 1){
-			printk("Use Single Channel LVDS\n");
-			hw768_enable_lvds(1);
-		}
-		else if(lvds_channel == 2){
-			printk("Use Dual Channel LVDS\n");
-			hw768_enable_lvds(2);
-			EnableDoublePixel(0);
+		if((sdev->m_connector & USE_DVI) && dst_ctrl == 0){  //LVDS and TTL always use CH0
+			if(lvds_channel == 1){
+				printk("Use Single Channel LVDS\n");
+				hw768_enable_lvds(1);
+				DisableDoublePixel(0);
+			}
+			else if(lvds_channel == 2){
+				printk("Use Dual Channel LVDS\n");
+				hw768_enable_lvds(2);
+				EnableDoublePixel(0);
+			}
 		}		
 
 	
@@ -558,8 +563,10 @@ static void smi_encoder_dpms(struct drm_encoder *encoder, int mode)
 			ddk768_swPanelPowerSequence(index, 1, 4);
 		}
 		
-		if(lvds_channel == 2)
+		if(lvds_channel == 2 && (sdev->m_connector & USE_DVI) )
 			EnableDoublePixel(0);
+		else
+			DisableDoublePixel(0);
 
 	}
 	
