@@ -57,7 +57,7 @@ static mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mod
     modeP.vertical_frequency = 0;
     
     /* Clock Phase. This clock phase only applies to Panel. */
-    modeP.clock_phase_polarity = NEG;
+    modeP.clock_phase_polarity = POS;
 
 	return modeP;
 }
