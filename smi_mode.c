@@ -650,6 +650,7 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 	int count = 0;
 	struct smi_device *sdev = connector->dev->dev_private;
 	struct smi_connector *smi_connector = to_smi_connector(connector);
+	struct drm_display_mode *mode;
 
 	ENTER();
 	dbg_msg("print connector type: [%d], DVI=%d, VGA=%d, HDMI=%d\n",
@@ -739,9 +740,10 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 			if(lvds_channel){
 
 				drm_connector_update_edid_property(connector, NULL);
-
-				count = drm_add_modes_noedid(connector, fixed_width, fixed_height);
-				drm_set_preferred_mode(connector, fixed_width, fixed_height);
+				  count = drm_add_modes_noedid(connector, 1920, 1080);
+				  mode = drm_cvt_mode(connector->dev, fixed_width, fixed_height, 60, false,false, false);
+				  mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
+				  drm_mode_probed_add(connector, mode);
 			}
 			else
 			{
