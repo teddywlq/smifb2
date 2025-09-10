@@ -12,6 +12,10 @@ ${Driver}-y += ddk750/ddk750_sii9022.o
 ${Driver}-y += ddk750/siHdmiTx_902x_TPI.o
 endif
 
+ifeq ($(lt8618),1)
+EXTRA_CFLAGS += -DUSE_LT8618
+${Driver}-y += ddk768/lt8618.o
+endif
 ifeq ($(ep952),1)
 EXTRA_CFLAGS += -DUSE_EP952
 ${Driver}-y += ddk768/ddk768_ep952.o

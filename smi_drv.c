@@ -645,7 +645,7 @@ MODULE_LICENSE("GPL");
 MODULE_VERSION(_version_);
 
 #ifdef RHEL_MAJOR
-#if RHEL_MAJOR == 9
+#if RHEL_MAJOR == 9 || RHEL_MAJOR == 10
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 #endif

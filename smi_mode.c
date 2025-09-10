@@ -312,6 +312,9 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 				hw768_enable_lvds(2);
 				EnableDoublePixel(0);
 			}
+#ifdef USE_LT8618
+		hw768_lt8618TaskWork(logicalMode.x, logicalMode.y);
+#endif				
 		}		
 
 	
@@ -846,6 +849,12 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 			return MODE_NOCLOCK;
 	}
 
+#ifdef USE_LT8618
+	if (connector->connector_type == DRM_MODE_CONNECTOR_DVII){
+		if(lt8618_SupportModeValid(mode->hdisplay, mode->vdisplay, vrefresh))
+			return MODE_NOMODE;
+	}
+#endif
 
 	if(lvds_channel && (!lcd_scale)){
 		if (connector->connector_type == DRM_MODE_CONNECTOR_DVII) {              

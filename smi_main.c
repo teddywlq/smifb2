@@ -374,6 +374,9 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		if(audio_en)
 			smi_audio_init(dev);
 #endif
+#ifdef USE_LT8618
+		hw768_init_lt8618();
+#endif
 	}	
 
 	r = smi_mm_init(cdev);
