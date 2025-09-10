@@ -580,7 +580,7 @@ void smi_gem_free_object(struct drm_gem_object *obj)
 #else
 			drm_prime_gem_destroy(&gbo->gem, gbo->bo.sg);
 #endif
-		if (kref_read(&obj->refcount)) {
+		if (kref_read(&gbo->bo.kref)) {
 			drm_gem_vram_put(gbo);
 		}
 	}
