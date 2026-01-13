@@ -25,7 +25,6 @@
 #include "hw768.h"
 
 extern int lcd_scale;
-extern int pwm_ctrl;
 
 #ifdef USE_LT8618
 extern LT8618_SUPPORTMODE lt8618_SupportMode[SUPPORTMODE];
