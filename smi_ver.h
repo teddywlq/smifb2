@@ -2,6 +2,14 @@
 #define __SMI_VERSION_H__
 
 #include <linux/version.h>
+#ifdef CONFIG_SUSE_PRODUCT_SLE
+#undef LINUX_VERSION_CODE
+#if CONFIG_SUSE_VERSION == 15
+#if CONFIG_SUSE_PATCHLEVEL == 3
+#define LINUX_VERSION_CODE 0x050800
+#endif
+#endif //15
+#endif
 #ifdef RHEL_MAJOR
 #undef LINUX_VERSION_CODE
 #if RHEL_MAJOR==8
