@@ -6,6 +6,7 @@ ${Driver}-objs :=smi_drv.o smi_main.o smi_mode.o smi_plane.o smi_ttm.o smi_prime
 ${Driver}-objs += ddk750/ddk750_help.o  ddk750/ddk750_chip.o  ddk750/ddk750_clock.o  ddk750/ddk750_mode.o ddk750/ddk750_power.o ddk750/ddk750_helper.o ddk750/ddk750_display.o ddk750/ddk750_2d.o ddk750/ddk750_edid.o ddk750/ddk750_swi2c.o ddk750/ddk750_hwi2c.o ddk750/ddk750_cursor.o
 
 
+${Driver}-y += smi_pwm.o
 ifeq ($(hdmi),1)
 EXTRA_CFLAGS += -DUSE_HDMICHIP
 ${Driver}-y += ddk750/ddk750_sii9022.o

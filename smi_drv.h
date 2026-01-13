@@ -90,7 +90,6 @@ extern int hwi2c_en;
 extern int swcur_en;
 extern int edid_mode;
 extern int lcd_scale;
-extern int pwm_ctrl;
 extern int use_vblank;
 
 struct smi_750_register;
@@ -241,6 +240,10 @@ void smi_gem_prime_unpin(struct drm_gem_object *obj);
 int smi_audio_init(struct drm_device *dev);
 void smi_audio_remove(struct drm_device *dev);
 
+int smi_pwm_init(struct drm_device *ddev);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+void smi_pwm_remove(struct drm_device *ddev);
+#endif
 void smi_audio_suspend(void);
 void smi_audio_resume(void);
 

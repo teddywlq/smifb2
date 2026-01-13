@@ -67,7 +67,7 @@ int swcur_en = 0;
 int edid_mode = 1;
 int smi_debug = 0;
 int lcd_scale = 0;
-int pwm_ctrl = 0;
+
 int clk_phase = -1;
 int use_vblank = 0;
 
@@ -98,8 +98,7 @@ MODULE_PARM_DESC(debug, "Driver debug log enable, 0 = disable 1 = enable (defaul
 module_param_named(debug, smi_debug, int, 0400);
 MODULE_PARM_DESC(lcdscale, "LCD(LVDS) scale  enable, 0 = disable 1 = enable (default:0)");
 module_param_named(lcdscale, lcd_scale, int, 0400);
-MODULE_PARM_DESC(pwm, "PWM Value, 0 = disable (default:0) bit 0-3: PWM 0/1/2 bit4-7: PWM Divider bit8-19: PWM Low Counter bit20-31: PWM High Counter");
-module_param_named(pwm, pwm_ctrl, int, 0400);
+
 MODULE_PARM_DESC(clkphase, "Panel Mode Clock phase, -1 = Use Mode table (Default)  0 = Negative 1 = Postive");
 module_param_named(clkphase, clk_phase, int, 0400);
 MODULE_PARM_DESC(vblank, "Disable/Enable hw vblank support");

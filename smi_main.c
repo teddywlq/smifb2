@@ -374,6 +374,7 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		if(audio_en)
 			smi_audio_init(dev);
 #endif
+		smi_pwm_init(dev);	
 #ifdef USE_LT8618
 		hw768_init_lt8618();
 #endif
@@ -385,6 +386,12 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		goto out;
 	}
 
+	dev->mode_config.funcs = (void *)&smi_mode_config_funcs;
+	r = smi_modeset_init(cdev);
+	if (r) {
+		DRM_ERROR("Fatal error during modeset init: %d\n", r);
+		goto out;
+	}
 	if (use_vblank) {
 		drm_vblank_init(dev, dev->mode_config.num_crtc);
 
@@ -396,13 +403,7 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 #endif
 		if (r)
 			DRM_ERROR("install irq failed , ret = %d\n", r);
-	}
 
-	dev->mode_config.funcs = (void *)&smi_mode_config_funcs;
-	r = smi_modeset_init(cdev);
-	if (r) {
-		DRM_ERROR("Fatal error during modeset init: %d\n", r);
-		goto out;
 	}
 
 
@@ -452,13 +453,15 @@ void smi_driver_unload(struct drm_device *dev)
 	smi_device_fini(cdev);
 
 
-#ifndef NO_AUDIO
+
 	if(cdev->specId == SPC_SM768)
 	{
+#ifndef NO_AUDIO
 		if(audio_en)
 			smi_audio_remove(dev);
-    }
 #endif
+		smi_pwm_remove(dev);
+	}
 
 	kvfree(cdev->regsave);
 	kfree(cdev);
@@ -574,10 +577,11 @@ void smi_gem_free_object(struct drm_gem_object *obj)
 	struct drm_gem_vram_object *gbo;
 	 gbo = drm_gem_vram_of_gem(obj);
 	 if (gbo) {
-		if (gbo->bo.base.import_attach)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+		if (gbo->bo.base.import_attach)
 			drm_prime_gem_destroy(&gbo->bo.base, gbo->bo.sg);
 #else
+		if (gbo->gem.import_attach)
 			drm_prime_gem_destroy(&gbo->gem, gbo->bo.sg);
 #endif
 		if (kref_read(&gbo->bo.kref)) {

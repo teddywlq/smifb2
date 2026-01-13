@@ -80,18 +80,8 @@ void hw768_enable_lvds(int channels)
 	}
 	
 	
-	if(pwm_ctrl)
-	{
-		unsigned long pwm, divider, highCounter, lowCounter;
 
-	     	pwm = pwm_ctrl & 0xf;
-		divider = (pwm_ctrl & 0xf0) >> 4;
-	    	highCounter = (pwm_ctrl & 0xfff00) >> 8;
-		lowCounter = (pwm_ctrl & 0xfff00000) >> 20;
 
-		ddk768_pwmOpen(pwm);
-		ddk768_pwmStart(pwm, divider, highCounter, lowCounter, 0);
-	}
 
 	
 }	
