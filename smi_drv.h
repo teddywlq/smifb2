@@ -37,11 +37,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20250818"
+#define DRIVER_DATE		"20260113"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		4
-#define DRIVER_PATCHLEVEL	2
+#define DRIVER_PATCHLEVEL	3
 
 #define SMIFB_CONN_LIMIT 3
 
@@ -51,7 +51,7 @@
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.4.2.0"
+#define _version_	"2.4.3.0"
 
 #undef  NO_WC
 
