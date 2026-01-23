@@ -418,7 +418,7 @@ __attribute__((unused)) static void HDMI_Clear_AVMute(void)
 }
 
 /* Before set HDMI IP mode, send AVMute to HDMI Sink in General Control Packet. */
-static void HDMI_Set_AVMute(void)
+__attribute__((unused)) static void HDMI_Set_AVMute(void)
 {
     unsigned char temp = 0;
     temp = readHDMIRegister(X45_VIDEO2);
@@ -534,7 +534,7 @@ void HDMI_Init(void)
     writeHDMIControlRegister (temp | 0x01);
     
     // Set AVMute to Sink
-    HDMI_Set_AVMute();
+    // HDMI_Set_AVMute();
     
     // Set to power mode B, in order to read/write to registers
     HDMI_System_PD (PowerMode_B);
