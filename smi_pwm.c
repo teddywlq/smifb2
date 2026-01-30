@@ -161,7 +161,7 @@ static int smi_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
  *
  * Returns 0 on success.
  */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 24)
 static int smi_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 			     struct pwm_state *state)
 #else
@@ -200,7 +200,7 @@ static void smi_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	state->enabled = !!(val & SMI_PWM_ENABLE);
 	state->polarity = PWM_POLARITY_NORMAL;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 16, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 24)
 	return 0;
 #endif
 }
