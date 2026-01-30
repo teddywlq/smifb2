@@ -138,7 +138,7 @@ static void claim(void)
 static int smi_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	struct drm_device *dev;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 	struct smi_device *sdev;
 #endif
 	int ret __attribute__((unused)) = 0;
