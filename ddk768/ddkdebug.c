@@ -132,7 +132,7 @@ void ddkDebugPrint(unsigned long debugLevel, const char* pszFormat, ...)
                 /* Print out the message to the log file */
                 if (gFileHandle != NULL)
                 {
-                    fprintf(gFileHandle, pszPrintBuffer);
+                    fprintf(gFileHandle, "%s", pszPrintBuffer);
                     fflush(gFileHandle);
                 }
                 break;
