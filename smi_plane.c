@@ -135,15 +135,19 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 		gbo = drm_gem_vram_of_gem(fb->obj[0]);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 		if (drm_gem_vram_pin(gbo, DRM_GEM_VRAM_PL_FLAG_VRAM) < 0) {
 			dbg_msg("vram_pin failed\n");
 			LEAVE();
 		}
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0) */
 
 		cursor_offset = drm_gem_vram_offset(gbo);
 		if (cursor_offset < 0) {
 			dbg_msg("get gpu_addr failed\n");
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 			drm_gem_vram_unpin(gbo);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0) */
 			LEAVE();
 		}
 		if (sdev->specId == SPC_SM750) {
@@ -184,7 +188,9 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 					  BPP32_BLUE);
 			ddk768_enableCursor(disp_ctrl, 3);
 		}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 		drm_gem_vram_unpin(gbo);
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0) */
 #else
 		bo = gem_to_smi_bo(fb->obj[0]);
 		if (smi_bo_pin(bo, TTM_PL_FLAG_VRAM, &cursor_offset) < 0) {
@@ -283,7 +289,7 @@ static const struct drm_plane_helper_funcs smi_cursor_helper_funcs = {
 	.atomic_disable = smi_cursor_atomic_disable,
 };
 
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 __attribute__((unused)) static int smi_primary_plane_prepare_fb(struct drm_plane *plane, struct drm_plane_state *new_state)
 {
 
@@ -363,6 +369,7 @@ __attribute__((unused)) static void smi_primary_plane_cleanup_fb(struct drm_plan
 	}
 	LEAVE();
 }
+#endif /* LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0) */
 
 static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 #if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE

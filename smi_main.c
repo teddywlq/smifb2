@@ -42,6 +42,9 @@ static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_fil
 
 static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *dev,
 							   struct drm_file *filp,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+							   const struct drm_format_info *drm_info,
+#endif
 							   const struct drm_mode_fb_cmd2 *mode_cmd);
 
 static const struct drm_framebuffer_funcs smi_fb_funcs = {
@@ -148,9 +151,11 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	gbo = drm_gem_vram_of_gem(obj);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 	ret = drm_gem_vram_pin(gbo, DRM_GEM_VRAM_PL_FLAG_VRAM);
 	if (ret)
 		return (0);
+#endif // LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	ret = drm_gem_vram_vmap(gbo, &dst_map);
@@ -232,7 +237,9 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	if (kmap)		
 	{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 		drm_gem_vram_unpin(gbo);
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 		drm_gem_vram_vunmap(gbo, &dst_map);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
@@ -300,9 +307,16 @@ unlock:
 
 static struct drm_framebuffer *smi_user_framebuffer_create(struct drm_device *dev,
 							   struct drm_file *filp,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+								 const struct drm_format_info *drm_info,
+#endif
 							   const struct drm_mode_fb_cmd2 *mode_cmd)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+	return (drm_gem_fb_create_with_funcs(dev, filp, drm_info, mode_cmd, &smi_fb_funcs));
+#else
 	return (drm_gem_fb_create_with_funcs(dev, filp, mode_cmd, &smi_fb_funcs));
+#endif
 }
 
 /*
