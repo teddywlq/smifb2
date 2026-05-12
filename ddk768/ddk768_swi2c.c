@@ -415,8 +415,10 @@ static long ddk768_swI2CSetGPIO(
 
 
     /* Enable the GPIO pins for the i2c Clock and Data (GPIO MUX) */
+    if (i2cClkGPIO > 5)
     pokeRegisterDWord(g_i2cClkGPIOMuxReg,
                       peekRegisterDWord(g_i2cClkGPIOMuxReg) & ~(1 << i2cClkGPIO));
+    if (i2cDataGPIO > 5)
     pokeRegisterDWord(g_i2cDataGPIOMuxReg,
                       peekRegisterDWord(g_i2cDataGPIOMuxReg) & ~(1 << i2cDataGPIO));
 
