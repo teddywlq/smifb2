@@ -39,3 +39,21 @@ options smifb lvds=1 width=1024 height=768
 Module Parameter
 ==============
 You can use "modinfo smifb" to get detail information.
+PWM Operation
+==============
+Export PWM channel 0 (if you need pwm1, change to "echo 1"):
+echo 0 | sudo tee /sys/class/pwm/pwmchip0/export
+Set the period (40000 ns = 25 kHz):
+echo 40000 | sudo tee /sys/class/pwm/pwmchip0/pwm0/period
+Set the duty cycle (20000 ns = 50%):
+echo 20000 | sudo tee /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+Enable PWM:
+echo 1 | sudo tee /sys/class/pwm/pwmchip0/pwm0/enable
+Check status:
+cat /sys/class/pwm/pwmchip0/pwm0/period
+cat /sys/class/pwm/pwmchip0/pwm0/duty_cycle
+cat /sys/class/pwm/pwmchip0/pwm0/enable
+Disable PWM:
+echo 0 | sudo tee /sys/class/pwm/pwmchip0/pwm0/enable
+Unexport PWM channel:
+echo 0 | sudo tee /sys/class/pwm/pwmchip0/unexport
