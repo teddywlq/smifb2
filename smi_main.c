@@ -701,7 +701,7 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 	if (cdev->specId == SPC_SM750)
 		ddk750_set_mmio(cdev->rmmio, pdev->device, pdev->revision);
 	else
-		ddk768_set_mmio(cdev->rmmio, pdev->device, pdev->revision);
+		ddk768_set_mmio(pdev , cdev->rmmio);
 
 	ret = smi_vram_init(cdev);
 	if (ret) {

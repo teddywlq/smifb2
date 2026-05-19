@@ -7,13 +7,18 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
+#if 0
+
+unsigned int peekRegisterDWord(unsigned int addr);
+void pokeRegisterDWord(unsigned int addr, unsigned int data);
 
 
-
+#else
 
 #define peekRegisterDWord(addr) readl((addr)+mmio768)
 #define pokeRegisterDWord(addr,data) writel((data),(addr)+mmio768)
 
+#endif
 #define peekRegisterByte(addr) readb((addr)+mmio768)
 #define pokeRegisterByte(addr,data) writeb((data),(addr)+mmio768)
 
@@ -23,7 +28,7 @@
 #define SM768_PCI_ALLOC_MEMORY_SIZE     (128*1024*1024)
 
 
-void ddk768_set_mmio(volatile unsigned char * addr,unsigned short devId,char revId);
+void ddk768_set_mmio(const struct pci_dev *dev, volatile unsigned char * addr);
 
 extern volatile unsigned  char __iomem * mmio768;
 
