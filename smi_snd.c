@@ -24,7 +24,7 @@
 #include "ddk768/ddk768_intr.h"
 #include "ddk768/ddk768_power.h"
 #include "ddk768/ddk768_chip.h"
-
+#include "ddk768/ddk768_help.h"
 
 
 //#include <drm/drmP.h>
@@ -37,6 +37,9 @@
 struct sm768chip *chip_irq_id=NULL;/*chip_irq_id is use for request and free irq*/
 int use_wm8978 = 0;
 
+#ifndef SMI_SND_USE_MEMCPY_COPY
+#define SMI_SND_USE_MEMCPY_COPY 1
+#endif
 static int SM768_AudioInit(unsigned long wordLength, unsigned long sampleRate)
 {
 	// Set up I2S and GPIO registers to transmit/receive data.
@@ -523,7 +526,16 @@ static int snd_smi_play_copy_data(struct sm768chip *chip,int sramTxSection)
 		if (play_runtime->dma_area == NULL) 
 			return 0;
 
-		memcpy_toio(chip->pvReg + SRAM_OUTPUT_BASE + SRAM_SECTION_SIZE * sramTxSection, play_runtime->dma_area + chip->ppointer, P_PERIOD_BYTE);
+#if SMI_SND_USE_MEMCPY_COPY
+		memcpy_toio(chip->pvReg + SRAM_OUTPUT_BASE + SRAM_SECTION_SIZE * sramTxSection,
+       		play_runtime->dma_area + chip->ppointer, P_PERIOD_BYTE);
+#else
+		u32 *src = (u32 *)(play_runtime->dma_area + chip->ppointer);
+		unsigned long dst_offset = SRAM_OUTPUT_BASE + SRAM_SECTION_SIZE * sramTxSection;
+		int i;
+		for (i = 0; i < (P_PERIOD_BYTE / sizeof(u32)); i++)
+			pokeRegisterDWord(dst_offset + i * sizeof(u32), src[i]);
+#endif
 		chip->ppointer+= P_PERIOD_BYTE;
 		chip->ppointer%= ((play_runtime->periods) * (P_PERIOD_BYTE));
 		snd_pcm_period_elapsed(play_substream);
@@ -548,7 +560,17 @@ static int snd_smi_capture_copy_data(struct sm768chip *chip,int sramTxSection)
 		if (capture_runtime->dma_area == NULL) 
 			return 0;
 
-		memcpy_fromio(capture_runtime->dma_area + chip->cpointer, chip->pvReg + SRAM_INPUT_BASE + SRAM_SECTION_SIZE * sramTxSection,  P_PERIOD_BYTE);
+#if SMI_SND_USE_MEMCPY_COPY
+		memcpy_fromio(capture_runtime->dma_area + chip->cpointer,
+		       chip->pvReg + SRAM_INPUT_BASE + SRAM_SECTION_SIZE * sramTxSection,
+		       P_PERIOD_BYTE);
+#else
+		u32 *dst = (u32 *)(capture_runtime->dma_area + chip->cpointer);
+		unsigned long src_offset = SRAM_INPUT_BASE + SRAM_SECTION_SIZE * sramTxSection;
+		int i;
+		for (i = 0; i < (P_PERIOD_BYTE / sizeof(u32)); i++)
+			dst[i] = peekRegisterDWord(src_offset + i * sizeof(u32));
+#endif
 		chip->cpointer+= P_PERIOD_BYTE;
 		chip->cpointer%= ((capture_runtime->periods) * (P_PERIOD_BYTE));		
 		snd_pcm_period_elapsed(capture_substream);
