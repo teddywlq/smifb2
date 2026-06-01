@@ -388,7 +388,9 @@ int smi_driver_load(struct drm_device *dev, unsigned long flags)
 		if(audio_en)
 			smi_audio_init(dev);
 #endif
+#ifndef RHEL_MAJOR
 		smi_pwm_init(dev);	
+#endif
 #ifdef USE_LT8618
 		hw768_init_lt8618();
 #endif
@@ -475,7 +477,9 @@ void smi_driver_unload(struct drm_device *dev)
 			smi_audio_remove(dev);
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+#ifndef RHEL_MAJOR
 		smi_pwm_remove(dev);
+#endif
 #endif
 	}
 
