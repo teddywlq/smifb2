@@ -2,7 +2,7 @@
 #include <linux/pci.h>
 
 volatile unsigned char __iomem * mmio768 = NULL;
-struct pci_dev *g_pdev = NULL;
+const struct pci_dev *g_pdev = NULL;
 
 /* after driver mapped io registers, use this function first */
 void ddk768_set_mmio(const struct pci_dev *dev, volatile unsigned char * addr)
