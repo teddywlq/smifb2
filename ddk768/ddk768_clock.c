@@ -166,3 +166,31 @@ unsigned long ddk768_formatPllReg(pll_value_t *pPLL)
 
 
 
+long ddk768_setVclkSscg(unsigned dispCtrl, unsigned long enable, unsigned long sscType)
+{
+    unsigned long pllReg;
+    unsigned long value;
+    if (dispCtrl == CHANNEL0_CTRL)
+        pllReg = VCLK0_PLL;
+    else if (dispCtrl == CHANNEL1_CTRL)
+        pllReg = VCLK1_PLL;
+    else
+        return -1;
+
+    value = peekRegisterDWord(pllReg);
+
+    if (!enable || sscType == 0) {
+        value = FIELD_VALUE(value, VCLK_PLL, SSC, 0);
+        value = FIELD_VALUE(value, VCLK_PLL, SSCG, 0);
+    } else {
+        if (sscType > 3)
+            sscType = 2;
+
+        value = FIELD_VALUE(value, VCLK_PLL, SSC, sscType);
+        value = FIELD_VALUE(value, VCLK_PLL, SSCG, 1);
+    }
+
+    pokeRegisterDWord(pllReg, value);
+
+    return 0;
+}

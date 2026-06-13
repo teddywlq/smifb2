@@ -91,6 +91,8 @@ extern int swcur_en;
 extern int edid_mode;
 extern int lcd_scale;
 extern int use_vblank;
+extern int sscg_en;
+extern int sscg_type;
 
 struct smi_750_register;
 struct smi_768_register;

@@ -30,6 +30,7 @@
 #include "hw768.h"
 #include "ddk768/ddk768_video.h"
 #include "ddk768/ddk768_chip.h"
+#include "ddk768/ddk768_clock.h"
 #include "smi_dbg.h"
 
 #define MAX_COLOR_LUT_ENTRIES 256
@@ -214,6 +215,12 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		logicalMode.pitch = 0;
 		logicalMode.dispCtrl = dst_ctrl;
 
+        /* SSCG must be configured before VCLK programming. */
+        if (ctrl_index == 1) {
+            ddk768_setVclkSscg(dst_ctrl, 0, sscg_type);
+        } else {
+            ddk768_setVclkSscg(dst_ctrl, (sscg_en ? 1 : 0), sscg_type);
+        }
 		switch (ctrl_index) // 0:DVI, 1:VGA, 2:HDMI
 		{
 			case 0:

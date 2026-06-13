@@ -70,6 +70,8 @@ int lcd_scale = 0;
 
 int clk_phase = -1;
 int use_vblank = 0;
+int sscg_en = 0;
+int sscg_type = 2;
 
 module_param(smi_pat, int, S_IWUSR | S_IRUSR);
 
@@ -103,6 +105,10 @@ MODULE_PARM_DESC(clkphase, "Panel Mode Clock phase, -1 = Use Mode table (Default
 module_param_named(clkphase, clk_phase, int, 0400);
 MODULE_PARM_DESC(vblank, "Disable/Enable hw vblank support");
 module_param_named(vblank, use_vblank, int, 0400);
+MODULE_PARM_DESC(sscg, "SM768 VCLK SSCG enable, 0=disable 1=enable (default:0)");
+module_param_named(sscg, sscg_en, int, 0400);
+MODULE_PARM_DESC(sscg_type, "SM768 SSCG type, 0=off 1=down 2=center 3=up (default:2)");
+module_param_named(sscg_type, sscg_type, int, 0400);
 
 
 

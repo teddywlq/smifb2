@@ -49,6 +49,14 @@ unsigned long ddk768_formatPllReg(pll_value_t *pPLL);
 
 long ddk768_setVclock(unsigned dispCtrl, unsigned long pixelClock);
 
+/*
+ * Configure VCLK SSCG for a display channel.
+ *
+ * dispCtrl: CHANNEL0_CTRL uses VCLK0, CHANNEL1_CTRL uses VCLK1.
+ * enable  : 0 = disable SSCG, 1 = enable SSCG.
+ * sscType : 0 = off, 1 = down spread, 2 = center spread, 3 = up spread.
+ */
+long ddk768_setVclkSscg(unsigned dispCtrl, unsigned long enable, unsigned long sscType);
 
 
 

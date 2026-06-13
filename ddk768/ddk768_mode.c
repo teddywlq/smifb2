@@ -798,6 +798,7 @@ static long ddk768_programModeRegisters(logicalMode_t *pLogicalMode, mode_parame
 	unsigned long offset, pllReg;
 	unsigned long hdmi_channel;
 	unsigned long regvalue;
+	unsigned long sscCtrlBits;
 #if 0				// print UHD register setting for debug.
 	if (pLogicalMode->x == 3840)
 		return (printModeRegisters(pLogicalMode, pModeParam, pPLL));
@@ -813,17 +814,20 @@ static long ddk768_programModeRegisters(logicalMode_t *pLogicalMode, mode_parame
 	pllReg =
 	    (pLogicalMode->dispCtrl == CHANNEL0_CTRL) ? VCLK0_PLL : VCLK1_PLL;
 
+	sscCtrlBits = peekRegisterDWord(pllReg) & ((1 << 30) | (3 << 28));
 	/* Turn off PLL at first. */
-	regvalue = peekRegisterByte(pllReg);
+	regvalue = peekRegisterDWord(pllReg);
 	regvalue |= (1 << 0);
 	pokeRegisterDWord(pllReg, regvalue);
 	/* Poke setting. */
 	regvalue = ddk768_formatPllReg(pPLL);
+	regvalue |= sscCtrlBits;
 	regvalue |= (1 << 0);
 	pokeRegisterDWord(pllReg, regvalue);
 	/* Delay 100 us and turn on PLL. */
 	udelay(100);
 	regvalue = ddk768_formatPllReg(pPLL);
+	regvalue |= sscCtrlBits;
 	regvalue &= ~(1 << 0);
 	pokeRegisterDWord(pllReg, regvalue);
 
