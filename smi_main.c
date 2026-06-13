@@ -108,11 +108,14 @@ static bool smi_merge_clips(struct drm_clip_rect *dst, struct drm_clip_rect *src
 	return (dst->x2 - dst->x1) == max_width && (dst->y2 - dst->y1) == max_height;
 }
 
-static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip)
+int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 11, 0)
 	bool kmap = false;
-	int i, ret = 0;
-	unsigned long offset = 0;
+#endif
+	bool pinned = false;
+	int i, ret;
+	unsigned long offset;
 	void *dst = NULL;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	struct drm_gem_vram_object *gbo;
@@ -122,144 +125,135 @@ static int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect cl
 	struct drm_gem_object *obj = fb->obj[0];
 	void *src = NULL;
 	unsigned bytesPerPixel = fb->format->cpp[0];
-
+	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
-	struct iosys_map src_map,dst_map;
+	struct iosys_map src_map, dst_map;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-	struct dma_buf_map src_map,dst_map;
+	struct dma_buf_map src_map, dst_map;
 #endif
-
-	if (!obj->import_attach) {
-		return (-EINVAL);
-	}
-
-	if (!src) {
+	
+#define SMI_FAIL_MAP(_msg) \
+	do { \
+		DRM_ERROR(_msg "\n"); \
+		dst = NULL; \
+		goto cleanup; \
+	} while (0)
+	
+	if (!obj->import_attach)
+		return -EINVAL;
+	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-		ret = dma_buf_vmap(obj->import_attach->dmabuf, &src_map);
-		if (ret) {
-				DRM_ERROR("Failed to vmap src buffer\n");
-				return (0);
-		}
-		src = src_map.vaddr;
-#else
-		src = dma_buf_vmap(obj->import_attach->dmabuf);
-		if (!src)
-			return (0);
-#endif
-
+	ret = dma_buf_vmap(obj->import_attach->dmabuf, &src_map);
+	if (ret) {
+		DRM_ERROR("Failed to vmap src buffer\n");
+		return 0;
 	}
-
+	src = src_map.vaddr;
+#else
+	src = dma_buf_vmap(obj->import_attach->dmabuf);
+	if (!src)
+		return 0;
+#endif
+	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 	gbo = drm_gem_vram_of_gem(obj);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
 	ret = drm_gem_vram_pin(gbo, DRM_GEM_VRAM_PL_FLAG_VRAM);
 	if (ret)
-		return (0);
-#endif // LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
-
+		goto cleanup;
+	pinned = true;
+#endif
+	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	ret = drm_gem_vram_vmap(gbo, &dst_map);
-				
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-	dst = drm_gem_vram_vmap(gbo);
-#else
-	dst = drm_gem_vram_kmap(gbo, false, NULL);
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-	if (ret) {
-		DRM_ERROR("failed to map vram\n");
-		goto error;
-	} 
-	kmap = true;
+	if (ret)
+		SMI_FAIL_MAP("failed to map vram");
 	dst = dst_map.vaddr;
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-	if (IS_ERR(dst)) {
-
-		DRM_ERROR("failed to map vram\n");
-		goto error;
-	} else if (!dst) {
+	dst = drm_gem_vram_vmap(gbo);
+	if (IS_ERR(dst))
+		SMI_FAIL_MAP("failed to map vram");
+	if (!dst) {
 		dst = drm_gem_vram_vmap(gbo);
-		if (IS_ERR(dst)) {
-			DRM_ERROR("failed to kmap vram\n");
-			goto error;
+		if (IS_ERR(dst))
+			SMI_FAIL_MAP("failed to kmap vram");
+		kmap = true;
 	}
-	kmap = true;
-	}        
 #else
-	if (IS_ERR(dst)) {
-
-		DRM_ERROR("failed to map vram\n");
-		goto error;
-	} else if (!dst) {
+	dst = drm_gem_vram_kmap(gbo, false, NULL);
+	if (IS_ERR(dst))
+		SMI_FAIL_MAP("failed to map vram");
+	if (!dst) {
 		dst = drm_gem_vram_kmap(gbo, true, NULL);
-		if (IS_ERR(dst)) {
-			DRM_ERROR("failed to kmap vram\n");
-			goto error;
-		}
+		if (IS_ERR(dst))
+			SMI_FAIL_MAP("failed to kmap vram");
 		kmap = true;
 	}
 #endif
-
-
-
-#else//5.3.0
+	
+#else
 	dst_bo = gem_to_smi_bo(obj);
 	if (!dst_bo->pin_count) {
 		ret = smi_bo_pin(dst_bo, TTM_PL_FLAG_VRAM, NULL);
 		if (ret)
-			return (0);
+			goto cleanup;
+		pinned = true;
 	}
-
+	
 	dst = smi_bo_kmap(dst_bo, false, NULL);
-	if (IS_ERR(dst)) {
-		DRM_ERROR("failed to kmap vram\n");
-		goto error;
-	} else if (!dst) {
+	if (IS_ERR(dst))
+		SMI_FAIL_MAP("failed to kmap vram");
+	if (!dst) {
 		dst = smi_bo_kmap(dst_bo, true, NULL);
-		if (IS_ERR(dst)) {
-			DRM_ERROR("failed to kmap vram\n");
-			goto error;
-		}
+		if (IS_ERR(dst))
+			SMI_FAIL_MAP("failed to kmap vram");
 		kmap = true;
 	}
 #endif
-
+	
 	dbg_msg("src: %p, dst: %p, x=%d, y=%d, fbwidth=%d, fbheight=%d, "
-		"width=%d, height=%d, bpp = %u, pitch=%d\n",
-		src, dst, clip.x1, clip.y1, fb->width, fb->height, clip.x2 - clip.x1,
-		clip.y2 - clip.y1, (bytesPerPixel << 3), fb->pitches[0]);
-
+	"width=%d, height=%d, bpp = %u, pitch=%d\n",
+	src, dst, clip.x1, clip.y1, fb->width, fb->height, clip.x2 - clip.x1,
+	clip.y2 - clip.y1, (bytesPerPixel << 3), fb->pitches[0]);
+	
 	for (i = clip.y1; i < clip.y2; i++) {
 		offset = i * fb->pitches[0] + (clip.x1 * bytesPerPixel);
 		memcpy_toio(dst + offset, src + offset, (clip.x2 - clip.x1) * bytesPerPixel);
 	}
+	
+cleanup:
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
-	if (kmap)		
-	{
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
-		drm_gem_vram_unpin(gbo);
-#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+	if (dst)
 		drm_gem_vram_vunmap(gbo, &dst_map);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+	if (kmap)
 		drm_gem_vram_vunmap(gbo, &dst);
-#else	
+#else
+	if (kmap)
 		drm_gem_vram_kunmap(gbo);
 #endif
-	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	if (pinned)
+		drm_gem_vram_unpin(gbo);
+#endif
 #else
 	if (kmap)
 		smi_bo_kunmap(dst_bo);
+	if (pinned)
+		smi_bo_unpin(dst_bo);
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)	
-	dma_buf_vunmap(obj->import_attach->dmabuf, &src_map);
+	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+	if (src)
+		dma_buf_vunmap(obj->import_attach->dmabuf, &src_map);
 #else
-    dma_buf_vunmap(obj->import_attach->dmabuf, src);
+	if (src)
+		dma_buf_vunmap(obj->import_attach->dmabuf, src);
 #endif
-
-error:
-	return (0);
+	
+#undef SMI_FAIL_MAP
+	return 0;
 }
 
 static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_file *file,
