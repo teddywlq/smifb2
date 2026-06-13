@@ -1,4 +1,7 @@
-ifneq ($(KERNELRELEASE),)
+ifneq ($(DKMS_BUILD),1)
+BUILD_IN_KERNEL := $(KERNELRELEASE)$(KBUILD_EXTMOD)
+endif
+ifneq ($(BUILD_IN_KERNEL),)
 
 Driver=smifb
 obj-m := ${Driver}.o
@@ -55,22 +58,31 @@ else
 endif
 
 CONFIG_MODULE_SIG=n
-knv :=$(shell uname -r)
-KERNELDIR :=/lib/modules/$(knv)/build
+ifeq ($(KVER),)
+	INODE_NOW := $(shell stat -Lc %d:%i /)
+	INODE_PID_1 := $(shell stat -Lc %d:%i /proc/1/root/.)
+	# uname -r is the wrong value under rootfs
+	ifeq ($(INODE_NOW), $(INODE_PID_1))
+		KVER := $(shell uname -r)
+	else
+		KVER := $(shell ls -d /lib/modules/* | tail -n 1 | cut -d'/' -f4)
+	endif
+endif
+KERNELDIR :=/lib/modules/$(KVER)/build
 PWD := $(shell pwd)
 RM = rm
-MOD_KERNEL_PATH = extra
+MOD_KERNEL_PATH = updates
 default:
-		$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
+		$(MAKE) -C $(KERNELDIR) M=$(PWD) DKMS_BUILD= modules
 install:default
-		$(MAKE) -C $(KERNELDIR) M=$(PWD) INSTALL_MOD_PATH=$(DESTDIR) INSTALL_MOD_DIR=$(MOD_KERNEL_PATH) modules_install
+		$(MAKE) -C $(KERNELDIR) M=$(PWD) DKMS_BUILD= INSTALL_MOD_PATH=$(DESTDIR) INSTALL_MOD_DIR=$(MOD_KERNEL_PATH) modules_install
 		$(DEPMOD)
 
 uninstall:
-		$(RM) -rf $(DESTDIR)/lib/modules/$(knv)/$(MOD_KERNEL_PATH)
+		$(RM) -rf $(DESTDIR)/lib/modules/$(KVER)/$(MOD_KERNEL_PATH)
 		$(DEPMOD)
 
 clean:
-		$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
+		$(MAKE) -C $(KERNELDIR) M=$(PWD) DKMS_BUILD= clean
 
 endif
