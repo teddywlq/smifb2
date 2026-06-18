@@ -88,9 +88,10 @@ struct drm_gem_object *smi_gem_prime_import_sg_table(struct drm_device *dev,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-	gbo = drm_gem_vram_create(dev, attach->dmabuf->size, PAGE_SIZE);
+	gbo = drm_gem_vram_create(dev, attach->dmabuf->size, 0);
 #else
-	gbo = drm_gem_vram_create(dev, &dev->vram_mm->bdev, attach->dmabuf->size, PAGE_SIZE, false);
+	gbo = drm_gem_vram_create(dev, &dev->vram_mm->bdev,
+				  attach->dmabuf->size, 0, false);
 #endif
 	if (IS_ERR(gbo)) {
 		ret = PTR_ERR(gbo);
