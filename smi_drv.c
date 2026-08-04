@@ -68,6 +68,7 @@ int edid_mode = 1;
 int smi_debug = 0;
 int lcd_scale = 0;
 
+int	ddr_retrain = 0;
 int clk_phase = -1;
 int use_vblank = 0;
 int sscg_en = 0;
@@ -103,6 +104,8 @@ module_param_named(lcdscale, lcd_scale, int, 0400);
 
 MODULE_PARM_DESC(clkphase, "Panel Mode Clock phase, -1 = Use Mode table (Default)  0 = Negative 1 = Postive");
 module_param_named(clkphase, clk_phase, int, 0400);
+MODULE_PARM_DESC(ddretrain, "DDR Re-train  0 = disable 1 = enable  (default:0)");
+module_param_named(ddretrain, ddr_retrain, int, 0400);
 MODULE_PARM_DESC(vblank, "Disable/Enable hw vblank support");
 module_param_named(vblank, use_vblank, int, 0400);
 MODULE_PARM_DESC(sscg, "SM768 VCLK SSCG enable, 0=disable 1=enable (default:0)");

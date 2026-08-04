@@ -37,11 +37,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20260113"
+#define DRIVER_DATE		"20260625"
 
 #define DRIVER_MAJOR		2
-#define DRIVER_MINOR		4
-#define DRIVER_PATCHLEVEL	3
+#define DRIVER_MINOR		5
+#define DRIVER_PATCHLEVEL	0
 
 #define SMIFB_CONN_LIMIT 3
 
@@ -51,7 +51,8 @@
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.4.3.0"
+#define _version_	"2.5.0.0"
+#define SM768_REG_EXTERNAL 0
 
 #undef  NO_WC
 
@@ -90,6 +91,7 @@ extern int hwi2c_en;
 extern int swcur_en;
 extern int edid_mode;
 extern int lcd_scale;
+extern int ddr_retrain;
 extern int use_vblank;
 extern int sscg_en;
 extern int sscg_type;
@@ -187,6 +189,7 @@ void smi_gem_free_object(struct drm_gem_object *obj);
 /* smi_plane.c */
 struct drm_plane *smi_plane_init(struct smi_device *cdev, unsigned int possible_crtcs,
 				 enum drm_plane_type type);
+int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip);
 
 /* smi_mode.c */
 int smi_modeset_init(struct smi_device *cdev);

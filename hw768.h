@@ -15,10 +15,11 @@ void ddk768_setDisplayPlaneDisableOnly(
    disp_control_t dispControl /* Channel 0 or Channel 1) */
 );
 
+void hw768_ddr_init(void);
 
 void hw768_enable_lvds(int channels);
 
-void ddk768_set_mmio(const struct pci_dev *dev, volatile unsigned char * addr);
+void ddk768_set_mmio(struct pci_dev *dev, volatile unsigned char * addr);
 unsigned long ddk768_getFrameBufSize(void);
 long ddk768_initChip(void);
 void ddk768_deInit(void);
@@ -133,7 +134,7 @@ void setDisplayDPMS(
 
 void HDMI_Init(void);
 int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mode, bool isHDMI);
-
+bool get_hdmi_channel(void);
 
 
 void ddk768_setDisplayEnable(disp_control_t dispControl, /* Channel 0 or Channel 1) */

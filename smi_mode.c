@@ -216,11 +216,8 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		logicalMode.dispCtrl = dst_ctrl;
 
         /* SSCG must be configured before VCLK programming. */
-        if (ctrl_index == 1) {
             ddk768_setVclkSscg(dst_ctrl, 0, sscg_type);
-        } else {
-            ddk768_setVclkSscg(dst_ctrl, (sscg_en ? 1 : 0), sscg_type);
-        }
+
 		switch (ctrl_index) // 0:DVI, 1:VGA, 2:HDMI
 		{
 			case 0:
@@ -365,6 +362,32 @@ static void smi_crtc_atomic_enable(struct drm_crtc *crtc,
 #endif
 {
 	ENTER();
+	struct smi_device *sdev = crtc->dev->dev_private;
+	if(!sscg_en)
+		LEAVE();
+	if(!crtc->state || !crtc->state->mode_changed)
+		LEAVE();
+	
+	if (sdev->specId == SPC_SM768 && sdev->m_connector & USE_HDMI){
+		int i, ctrl_index, dst_ctrl;
+		ctrl_index = 0;
+		dst_ctrl = 0;
+		
+		for(i = 0;i < MAX_ENCODER; i++)
+		{
+			if(crtc == sdev->smi_enc_tab[i]->crtc)
+			{
+				ctrl_index = i;
+				break;
+			}
+		}
+
+		if(sdev->smi_enc_tab[ctrl_index]->encoder_type == DRM_MODE_ENCODER_TMDS){
+			dst_ctrl = get_hdmi_channel();
+			ddk768_setVclkSscg(dst_ctrl, 1, sscg_type);
+		}
+	}
+
 	LEAVE();
 }
 
@@ -472,6 +495,15 @@ static struct smi_crtc *smi_crtc_init(struct drm_device *dev, int crtc_id)
 	drm_crtc_enable_color_mgmt(&smi_crtc->base, 0, false, MAX_COLOR_LUT_ENTRIES);
 	drm_mode_crtc_set_gamma_size(&smi_crtc->base, MAX_COLOR_LUT_ENTRIES);
 	
+#if 0
+	if (cdev->specId == SPC_SM768) {
+		struct drm_plane *overlay;
+
+		overlay = smi_plane_init(cdev, 1 << crtc_id, DRM_PLANE_TYPE_OVERLAY);
+		if (IS_ERR(overlay))
+			DRM_WARN("smifb: overlay plane init failed for crtc %d\n", crtc_id);
+	}
+#endif
 	drm_crtc_helper_add(&smi_crtc->base, &smi_crtc_helper_funcs);
 	return smi_crtc;
 

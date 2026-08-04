@@ -26,6 +26,7 @@
 
 #include "hw750.h"
 #include "hw768.h"
+#include "ddk768/ddk768_video.h"
 
 
 __attribute__((unused)) static void colorcur2monocur(void *data);
@@ -449,6 +450,21 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 	smi_bo_pin(bo, TTM_PL_FLAG_VRAM, &plane_addr);
 #endif
 
+	/* For PRIME imported buffers, blit source GPU data into local VRAM only when fb changes */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	{
+		struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+		if (fb->obj[0]->import_attach && old_state && fb != old_state->fb) {
+			struct drm_clip_rect clip = { 0, 0, fb->width, fb->height };
+			smi_handle_damage(fb, clip);
+		}
+	}
+#else
+	if (fb->obj[0]->import_attach && fb != old_state->fb) {
+		struct drm_clip_rect clip = { 0, 0, fb->width, fb->height };
+		smi_handle_damage(fb, clip);
+	}
+#endif
 	fb->pitches[0] = (fb->pitches[0] + 15) & ~15;
 
 	offset = plane_addr + y * fb->pitches[0] + x * fb->format->cpp[0];
@@ -522,6 +538,188 @@ static const struct drm_plane_funcs smi_plane_funcs = {
 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state
 };
 
+/* ------------------------------------------------------------------ */
+/* SM768 hardware video overlay plane (Xv / KMS overlay)              */
+/* ------------------------------------------------------------------ */
+
+static const uint32_t smi_video_plane_formats[] = {
+	DRM_FORMAT_YUYV,   /* packed YUV 4:2:2 -- FORMAT_YUYV  */
+	DRM_FORMAT_YUV420, /* planar  YUV 4:2:0 -- FORMAT_YUV420 */
+};
+
+/*
+ * smi_video_get_disp_ctrl - map a CRTC to the SM768 display controller channel.
+ */
+static int smi_video_get_disp_ctrl(struct smi_device *sdev, struct drm_crtc *crtc)
+{
+	int i;
+	for (i = 0; i < MAX_ENCODER; i++) {
+		if (sdev->smi_enc_tab[i] && crtc == sdev->smi_enc_tab[i]->crtc)
+			break;
+	}
+	if (i >= MAX_CRTC)
+		return smi_calc_hdmi_ctrl(sdev->m_connector);
+	return (i == CHANNEL1_CTRL) ? CHANNEL1_CTRL : CHANNEL0_CTRL;
+}
+
+static int smi_video_atomic_check(struct drm_plane *plane,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
+					  struct drm_plane_state *state
+#else
+					  struct drm_atomic_state *atom_state
+#endif
+)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *state = drm_atomic_get_new_plane_state(atom_state, plane);
+#endif
+	if (!state->fb)
+		return 0;
+	if (!state->crtc_w || !state->crtc_h)
+		return -EINVAL;
+	/*
+	 * SM768 video overlay only supports upscaling (dst >= src).
+	 * Reject downscale requests so the compositor falls back to
+	 * software rendering rather than displaying garbage.
+	 */
+	if (state->crtc_w < (state->src_w >> 16) ||
+	    state->crtc_h < (state->src_h >> 16))
+		return -EINVAL;
+	return 0;
+}
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
+
+static void smi_video_atomic_update(struct drm_plane *plane,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
+					   struct drm_plane_state *old_state
+#else
+					   struct drm_atomic_state *atom_state
+#endif
+)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *state = drm_atomic_get_new_plane_state(atom_state, plane);
+#else
+	struct drm_plane_state *state = plane->state;
+#endif
+	struct smi_device *sdev = plane->dev->dev_private;
+	struct drm_framebuffer *fb;
+	struct drm_gem_vram_object *gbo;
+	video_format_t vfmt;
+	unsigned long y_addr, u_addr, v_addr;
+	unsigned long y_pitch, uv_pitch;
+	unsigned long src_w, src_h, dst_w, dst_h;
+	long dst_x, dst_y;
+	int disp_ctrl;
+
+	if (!state || !state->fb || !state->crtc)
+		return;
+	if (sdev->specId != SPC_SM768)
+		return;
+
+	fb       = state->fb;
+	disp_ctrl = smi_video_get_disp_ctrl(sdev, state->crtc);
+
+	/* Source size (fixed-point 16.16 -> pixels) */
+	src_w = state->src_w >> 16;
+	src_h = state->src_h >> 16;
+
+	/* Destination rectangle (crtc_x/y may be negative when clipped) */
+	dst_x = state->crtc_x < 0 ? 0 : state->crtc_x;
+	dst_y = state->crtc_y < 0 ? 0 : state->crtc_y;
+	dst_w = state->crtc_w;
+	dst_h = state->crtc_h;
+
+	if (!src_w || !src_h || !dst_w || !dst_h)
+		return;
+
+	/*
+	 * Hardware consumes local VRAM addresses.  prepare_fb pins every GEM
+	 * object before this callback, so drm_gem_vram_offset() is stable here.
+	 * Add the per-plane framebuffer offset as multi-planar framebuffers may
+	 * share GEM objects and distinguish Y/U/V by offsets[].
+	 */
+	gbo     = drm_gem_vram_of_gem(fb->obj[0]);
+	y_addr  = (unsigned long)drm_gem_vram_offset(gbo) + fb->offsets[0];
+	y_pitch = fb->pitches[0];
+
+	if (fb->format->format == DRM_FORMAT_YUV420 && fb->obj[1] && fb->obj[2]) {
+		struct drm_gem_vram_object *ugbo = drm_gem_vram_of_gem(fb->obj[1]);
+		struct drm_gem_vram_object *vgbo = drm_gem_vram_of_gem(fb->obj[2]);
+		u_addr   = (unsigned long)drm_gem_vram_offset(ugbo) + fb->offsets[1];
+		v_addr   = (unsigned long)drm_gem_vram_offset(vgbo) + fb->offsets[2];
+		uv_pitch = fb->pitches[1];
+		vfmt     = FORMAT_YUV420;
+	} else {
+		u_addr = v_addr = uv_pitch = 0;
+		vfmt   = FORMAT_YUYV;
+	}
+
+	DRM_INFO("overlay plane=%u crtc=%u fb=%u fmt=%p4cc "
+		 "fb=%ux%u src=%lux%lu+%u+%u dst=%lux%lu+%ld+%ld "
+		 "addr=%#lx offset=%u pitch=%lu uv_pitch=%lu ctrl=%d\n",
+		 plane->base.id, state->crtc->base.id, fb->base.id,
+		 &fb->format->format, fb->width, fb->height,
+		 src_w, src_h, state->src_x >> 16, state->src_y >> 16,
+		 dst_w, dst_h, dst_x, dst_y, y_addr, fb->offsets[0],
+		 y_pitch, uv_pitch, disp_ctrl);
+
+	/* Enable bilinear interpolation for smooth scaling */
+	videoSetInterpolation(disp_ctrl, 1, 1);
+
+	videoSetupEx(disp_ctrl,
+		     (unsigned long)dst_x, (unsigned long)dst_y,
+		     src_w, src_h, dst_w, dst_h,
+		     0 /* single buffer */,
+		     y_addr, u_addr, v_addr, uv_pitch,
+		     y_pitch, y_pitch,
+		     vfmt, 0, 0);
+	startVideo(disp_ctrl);
+}
+
+static void smi_video_atomic_disable(struct drm_plane *plane,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
+					    struct drm_plane_state *old_state
+#else
+					    struct drm_atomic_state *atom_state
+#endif
+)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	struct drm_plane_state *old_state = drm_atomic_get_old_plane_state(atom_state, plane);
+#endif
+	struct smi_device *sdev = plane->dev->dev_private;
+	int disp_ctrl;
+
+	if (sdev->specId != SPC_SM768 || !old_state->crtc)
+		return;
+	disp_ctrl = smi_video_get_disp_ctrl(sdev, old_state->crtc);
+	stopVideo(disp_ctrl);
+}
+
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0) */
+
+static const struct drm_plane_helper_funcs smi_video_plane_helper_funcs = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 17, 0)
+	.prepare_fb    = drm_gem_vram_plane_helper_prepare_fb,
+	.cleanup_fb    = drm_gem_vram_plane_helper_cleanup_fb,
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+	/*
+	 * drm_gem_vram_plane_helper_prepare_fb() was added in 5.5.  On 5.3/5.4,
+	 * use the driver's equivalent helpers so the overlay BO is pinned in
+	 * local VRAM before its hardware address is programmed.
+	 */
+	.prepare_fb    = smi_primary_plane_prepare_fb,
+	.cleanup_fb    = smi_primary_plane_cleanup_fb,
+#endif
+	.atomic_check   = smi_video_atomic_check,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 3, 0)
+	.atomic_update  = smi_video_atomic_update,
+	.atomic_disable = smi_video_atomic_disable,
+#endif
+};
+
 struct drm_plane *smi_plane_init(struct smi_device *cdev, unsigned int possible_crtcs,
 				 enum drm_plane_type type)
 {
@@ -544,6 +742,12 @@ struct drm_plane *smi_plane_init(struct smi_device *cdev, unsigned int possible_
 		formats = smi_cursor_plane_formats;
 		num_formats = ARRAY_SIZE(smi_cursor_plane_formats);
 		helper_funcs = &smi_cursor_helper_funcs;
+		break;
+	case DRM_PLANE_TYPE_OVERLAY:
+		funcs        = &smi_plane_funcs;
+		formats      = smi_video_plane_formats;
+		num_formats  = ARRAY_SIZE(smi_video_plane_formats);
+		helper_funcs = &smi_video_plane_helper_funcs;
 		break;
 	default:
 		return ERR_PTR(-EINVAL);

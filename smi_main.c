@@ -216,9 +216,17 @@ int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip)
 	src, dst, clip.x1, clip.y1, fb->width, fb->height, clip.x2 - clip.x1,
 	clip.y2 - clip.y1, (bytesPerPixel << 3), fb->pitches[0]);
 	
+	if (clip.x1 == 0 &&
+	    (u32)(clip.x2 - clip.x1) * bytesPerPixel == fb->pitches[0]) {
+		offset = (size_t)clip.y1 * fb->pitches[0];
+		memcpy_toio(dst + offset, src + offset,
+			    (size_t)(clip.y2 - clip.y1) * fb->pitches[0]);
+	} else {
 	for (i = clip.y1; i < clip.y2; i++) {
 		offset = i * fb->pitches[0] + (clip.x1 * bytesPerPixel);
-		memcpy_toio(dst + offset, src + offset, (clip.x2 - clip.x1) * bytesPerPixel);
+			memcpy_toio(dst + offset, src + offset,
+				     (clip.x2 - clip.x1) * bytesPerPixel);
+		}
 	}
 	
 cleanup:
@@ -266,6 +274,14 @@ static int smi_user_framebuffer_dirty(struct drm_framebuffer *fb, struct drm_fil
 	struct drm_gem_object *obj = fb->obj[0];
 #endif
 	struct drm_clip_rect clip;
+	/*
+	 * For regular VRAM-backed framebuffers the hardware scans out directly
+	 * from VRAM -- no copy is needed.  Acquiring the heavy global modeset
+	 * lock for a no-op would serialize every X11/Wayland DRM_IOCTL_MODE_DIRTYFB
+	 * call against all other modeset operations.
+	 */
+	if (!fb->obj[0]->import_attach)
+		return 0;
 
 	drm_modeset_lock_all(fb->dev);
 
@@ -701,6 +717,8 @@ int smi_device_init(struct smi_device *cdev, struct drm_device *ddev, struct pci
 	else
 		ddk768_set_mmio(pdev , cdev->rmmio);
 
+	if(ddr_retrain && (cdev->specId == SPC_SM768))
+		hw768_ddr_init();
 	ret = smi_vram_init(cdev);
 	if (ret) {
 		return ret;

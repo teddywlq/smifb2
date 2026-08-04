@@ -66,8 +66,25 @@ static mode_parameter_t convert_drm_mode_to_ddk_mode(struct drm_display_mode mod
 	return modeP;
 }
 
+void hw768_ddr_init(void)
+{
+	unsigned long ulTmp;
 
+	printk("SM768 DDR Re-train\n");
 
+    ulTmp = peekRegisterDWord(CLOCK_ENABLE);
+    pokeRegisterDWord(CLOCK_ENABLE, 0);
+	pokeRegisterDWord(0x41d4, 0x3c000001);
+	pokeRegisterDWord(0x4214, 0x3c000001);
+	pokeRegisterDWord(0x4254, 0x3c000001);
+	pokeRegisterDWord(0x4294, 0x3c000001);
+	pokeRegisterDWord(0x4184, 0x1b);
+	pokeRegisterDWord(0x4024, 0x30400832);
+	pokeRegisterDWord(0x4004, 0x0);
+	pokeRegisterDWord(0x4004, 0x1FF);
+	mdelay(50);
+    pokeRegisterDWord(CLOCK_ENABLE, ulTmp);
+}
 void hw768_enable_lvds(int channels)
 {
 
@@ -221,6 +238,10 @@ int hw768_set_hdmi_mode(logicalMode_t *pLogicalMode, struct drm_display_mode mod
 		modeParam = convert_drm_mode_to_ddk_mode(mode);
 	ret = HDMI_Set_Mode(pLogicalMode,&modeParam,isHDMI);
 	return ret;
+}
+bool get_hdmi_channel()
+{
+	return peekRegisterDWord(DISPLAY_CTRL) & (1 << 18);
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
