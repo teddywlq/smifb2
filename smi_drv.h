@@ -45,6 +45,12 @@
 
 #define SMIFB_CONN_LIMIT 3
 
+enum smi_audio_mode {
+	SMI_AUDIO_DISABLED = 0,
+	SMI_AUDIO_HDMI = 1,
+	SMI_AUDIO_WM8978 = 2,
+	SMI_AUDIO_UDA1345 = 3,
+};
 
 
 #define RELEASE_TYPE "Linux DRM Display Driver Release"

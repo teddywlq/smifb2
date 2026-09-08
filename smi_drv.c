@@ -89,7 +89,7 @@ MODULE_PARM_DESC(width, "Fixed mode width for LVDS or nopnp (default:0)");
 module_param_named(width, fixed_width, int, 0400);
 MODULE_PARM_DESC(height, "Fixed mode height for LVDS or nopnp (default:0)");
 module_param_named(height, fixed_height, int, 0400);
-MODULE_PARM_DESC(audio, "SM768 Audio, 0=diable 1=use UDA1345 Codec, 2=use WM8978 Codec(default:0)");
+MODULE_PARM_DESC(audio, "SM768 Audio, 0=disable, 1=HDMI audio, 2=WM8978 codec, 3=UDA1345 codec (default:0)");
 module_param_named(audio, audio_en, int, 0400);
 MODULE_PARM_DESC(hwi2c, "HW I2C for EDID reading, 0=SW I2C 1=HW I2C(default:0)");
 module_param_named(hwi2c, hwi2c_en, int, 0400);

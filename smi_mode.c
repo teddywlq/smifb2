@@ -874,12 +874,14 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 
 	u32 vrefresh = drm_mode_vrefresh(mode);	
 	
-	if ((vrefresh < 29) || (vrefresh > 61) || (vrefresh > 31 && vrefresh < 59)){  
+	if ((vrefresh < 29) || (vrefresh > 61) ||
+	    (vrefresh > 31 && vrefresh < 59)) {
 		if(!edid_mode)
 			return MODE_NOCLOCK;
 	}
 
-	if ((mode->hdisplay > 3840) || (mode->vdisplay > 2160) || (mode->clock > 297000))
+	if ((mode->hdisplay > 3840) || (mode->vdisplay > 2160) ||
+	    (mode->clock > 297000))
 		 return MODE_NOMODE;
 	
 	
@@ -888,26 +890,25 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 			return MODE_NOMODE;
 	}
 
-	if(connector->connector_type == DRM_MODE_CONNECTOR_DVII){
-		if(mode->clock >= 200000)
+	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVII) &&
+	    (mode->clock >= 200000))
 			return MODE_NOCLOCK;
-	}
 
 #ifdef USE_LT8618
-	if (connector->connector_type == DRM_MODE_CONNECTOR_DVII){
-		if(lt8618_SupportModeValid(mode->hdisplay, mode->vdisplay, vrefresh))
+	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVII) &&
+	    lt8618_SupportModeValid(mode->hdisplay, mode->vdisplay, vrefresh))
 			return MODE_NOMODE;
-	}
 #endif
 
-	if(lvds_channel && (!lcd_scale)){
-		if (connector->connector_type == DRM_MODE_CONNECTOR_DVII) {              
-				if ((mode->hdisplay == fixed_width) && (mode->vdisplay == fixed_height))                
+	if (lvds_channel && !lcd_scale &&
+	    (connector->connector_type == DRM_MODE_CONNECTOR_DVII)) {
+		if ((mode->hdisplay == fixed_width) &&
+		    (mode->vdisplay == fixed_height))
 					return MODE_OK;    
-				else                
+
 					return MODE_NOMODE;
 		}
-	}
+
 	return MODE_OK;
 
 }
