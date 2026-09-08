@@ -45,6 +45,15 @@ jobs:
       image: ${{ matrix.image }}
 
     steps:
+      - name: Configure archived Debian 11 repository
+        if: matrix.kernel == '5.10'
+        run: |
+          printf '%s\n' \
+            'deb [check-valid-until=no] http://archive.debian.org/debian bullseye main' \
+            > /etc/apt/sources.list
+          if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -delete
+          fi
       - name: Install build tools and headers
         env:
           DEBIAN_FRONTEND: noninteractive
