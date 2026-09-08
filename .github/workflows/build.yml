@@ -33,9 +33,6 @@ jobs:
           - kernel: "6.1"
             image: debian:bookworm
             headers: linux-headers-amd64
-          - kernel: "6.6"
-            image: vicamo/mainline-kernel-headers:6.6
-            headers: ""
           - kernel: "7.0"
             image: vicamo/mainline-kernel-headers:7.0
             headers: ""
@@ -45,15 +42,17 @@ jobs:
       image: ${{ matrix.image }}
 
     steps:
-      - name: Configure archived Debian 11 repository
+      - name: Configure Debian 11 snapshot repositories
         if: matrix.kernel == '5.10'
         run: |
           printf '%s\n' \
-            'deb [check-valid-until=no] http://archive.debian.org/debian bullseye main' \
+            'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye main' \
+            'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260901T000000Z bullseye-security main' \
             > /etc/apt/sources.list
           if [ -d /etc/apt/sources.list.d ]; then
             find /etc/apt/sources.list.d -type f -delete
           fi
+
       - name: Install build tools and headers
         env:
           DEBIAN_FRONTEND: noninteractive
@@ -114,6 +113,56 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: smifb-kernel-${{ matrix.kernel }}
+          path: smifb.ko
+          if-no-files-found: error
+          retention-days: 30
+
+  build-6-6:
+    name: Kernel 6.6
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Build in Alpine 3.19 Docker container
+        run: |
+          docker run --rm \
+            --volume "${GITHUB_WORKSPACE}:/src" \
+            --workdir /src \
+            alpine:3.19 \
+            sh -euxc '
+              apk add --no-cache build-base file kmod linux-lts-dev
+
+              KVER="$({
+                for directory in /lib/modules/*; do
+                  [ -d "${directory}/build" ] && basename "${directory}"
+                done
+              } | sort -V | tail -n 1)"
+
+              case "${KVER}" in
+                6.6.*|6.6-*) ;;
+                *)
+                  echo "Expected kernel 6.6.x, found ${KVER}" >&2
+                  exit 1
+                  ;;
+              esac
+
+              echo "Building against /lib/modules/${KVER}/build"
+              make KVER="${KVER}" clean
+              make KVER="${KVER}" -j"$(nproc)"
+
+              test -s smifb.ko
+              file smifb.ko
+              modinfo smifb.ko
+              modinfo -F vermagic smifb.ko | grep -F "${KVER}"
+            '
+
+      - name: Upload module
+        uses: actions/upload-artifact@v7
+        with:
+          name: smifb-kernel-6.6
           path: smifb.ko
           if-no-files-found: error
           retention-days: 30
