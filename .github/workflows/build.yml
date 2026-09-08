@@ -22,8 +22,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y \
+          sudo apt-get update
+          sudo apt-get install -y \
             build-essential \
             linux-headers-generic \
             linux-image-generic \
@@ -34,13 +34,13 @@ jobs:
       
       - name: Display kernel info
         run: |
-          uname -r
-          ls -la /lib/modules/
+          sudo uname -r
+          sudo ls -la /lib/modules/
       
       - name: Build driver
         run: |
-          make clean
-          make
+          sudo make clean
+          sudo make
       
       - name: Check compilation result
         run: |
@@ -55,7 +55,7 @@ jobs:
       - name: Run basic checks
         run: |
           echo "Checking for obvious issues..."
-          modinfo smifb.ko 2>/dev/null || echo "Module info check completed"
+          sudo modinfo smifb.ko 2>/dev/null || echo "Module info check completed"
       
       - name: Upload build artifacts
         if: success()
@@ -74,10 +74,10 @@ jobs:
       
       - name: Install dependencies
         run: |
-          apt-get update
-          apt-get install -y cppcheck
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
       
       - name: Static code analysis
         continue-on-error: true
         run: |
-          cppcheck --enable=all --suppress=missingIncludeSystem . 2>&1 | head -100
+          sudo cppcheck --enable=all --suppress=missingIncludeSystem . 2>&1 | head -100
