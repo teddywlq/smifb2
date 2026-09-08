@@ -20,11 +20,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Display kernel info
-        run: |
-          uname -r
-          ls -la /lib/modules/
-      
       - name: Install dependencies
         run: |
           apt-get update
