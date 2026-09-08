@@ -20,20 +20,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y \
-            build-essential \
-            linux-headers-generic \
-            make \
-            gcc \
-            git
-      
       - name: Display kernel info
         run: |
           uname -r
           ls -la /lib/modules/
+      
+      - name: Install dependencies
+        run: |
+          apt-get update
+          # Install build tools first
+          apt-get install -y \
+            build-essential \
+            make \
+            gcc \
+            git
+          
+          # Install kernel headers matching the actual running kernel
+          KERNEL_VERSION=$(uname -r)
+          echo "Installing headers for kernel: $KERNEL_VERSION"
+          
+          if [[ "$KERNEL_VERSION" == *"azure"* ]]; then
+            apt-get install -y linux-headers-azure || apt-get install -y linux-headers-generic
+          else
+            apt-get install -y linux-headers-generic
+          fi
       
       - name: Build driver
         run: |
