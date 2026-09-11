@@ -2,85 +2,185 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
+    name: Kernel ${{ matrix.kernel }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
-        kernel-version: ["5.4", "5.10", "5.15", "6.1", "6.6", "7.0"]
-    
+        include:
+          - kernel: "5.4"
+            image: ubuntu:20.04
+            headers: linux-headers-generic
+          - kernel: "5.10"
+            image: debian:bullseye
+            headers: linux-headers-amd64
+          - kernel: "5.15"
+            image: ubuntu:22.04
+            headers: linux-headers-generic
+          - kernel: "6.1"
+            image: debian:bookworm
+            headers: linux-headers-amd64
+          - kernel: "7.0"
+            image: vicamo/mainline-kernel-headers:7.0
+            headers: ""
+
+    # GitHub runs every step in this job inside the selected Docker image.
     container:
-      image: ubuntu:20.04
-    
+      image: ${{ matrix.image }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install dependencies
+      - name: Configure Debian 11 snapshot repositories
+        if: matrix.kernel == '5.10'
+        run: |
+          printf '%s\n' \
+            'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260901T000000Z bullseye main' \
+            'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260901T000000Z bullseye-security main' \
+            > /etc/apt/sources.list
+          if [ -d /etc/apt/sources.list.d ]; then
+            find /etc/apt/sources.list.d -type f -delete
+          fi
+
+      - name: Install build tools and headers
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          HEADER_PACKAGE: ${{ matrix.headers }}
         run: |
           apt-get update
-          # Install build tools first
-          apt-get install -y \
+          apt-get install -y --no-install-recommends \
             build-essential \
-            make \
-            gcc \
-            git
-          
-          # Install kernel headers matching the actual running kernel
-          KERNEL_VERSION=$(uname -r)
-          echo "Installing headers for kernel: $KERNEL_VERSION"
-          
-          if [[ "$KERNEL_VERSION" == *"azure"* ]]; then
-            apt-get install -y linux-headers-azure || apt-get install -y linux-headers-generic
-          else
-            apt-get install -y linux-headers-generic
-          fi
-      
-      - name: Build driver
+            ca-certificates \
+            file \
+            git \
+            kmod \
+            ${HEADER_PACKAGE}
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Select kernel headers
+        env:
+          EXPECTED_KERNEL: ${{ matrix.kernel }}
         run: |
-          make clean
-          make
-      
-      - name: Check compilation result
-        run: |
-          if [ -f *.ko ]; then
-            echo "✓ Module compiled successfully"
-            file *.ko
-          else
-            echo "✗ Build failed"
+          KVER="$({
+            for directory in /lib/modules/*; do
+              [ -d "${directory}/build" ] && basename "${directory}"
+            done
+          } | sort -V | tail -n 1)"
+
+          if [ -z "${KVER}" ]; then
+            echo "No prepared kernel headers found under /lib/modules" >&2
             exit 1
           fi
-      
-      - name: Run basic checks
+
+          case "${KVER}" in
+            "${EXPECTED_KERNEL}".*|"${EXPECTED_KERNEL}"-*) ;;
+            *)
+              echo "Expected kernel ${EXPECTED_KERNEL}.x, found ${KVER}" >&2
+              exit 1
+              ;;
+          esac
+
+          echo "KVER=${KVER}" >> "${GITHUB_ENV}"
+          echo "Building against /lib/modules/${KVER}/build"
+
+      - name: Build driver
         run: |
-          echo "Checking for obvious issues..."
-          sudo modinfo smifb.ko 2>/dev/null || echo "Module info check completed"
-      
-      - name: Upload build artifacts
-        if: success()
-        uses: actions/upload-artifact@v4
+          make KVER="${KVER}" clean
+          make KVER="${KVER}" -j"$(nproc)"
+
+      - name: Verify module
+        run: |
+          test -s smifb.ko
+          file smifb.ko
+          modinfo smifb.ko
+          modinfo -F vermagic smifb.ko | grep -F "${KVER}"
+
+      - name: Upload module
+        uses: actions/upload-artifact@v7
         with:
-          name: kernel-module-${{ matrix.kernel-version }}
-          path: "*.ko"
+          name: smifb-kernel-${{ matrix.kernel }}
+          path: smifb.ko
+          if-no-files-found: error
+          retention-days: 30
+
+  build-6-6:
+    name: Kernel 6.6
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Build in Alpine 3.19 Docker container
+        run: |
+          docker run --rm \
+            --volume "${GITHUB_WORKSPACE}:/src" \
+            --workdir /src \
+            alpine:3.19 \
+            sh -euxc '
+              apk add --no-cache build-base file kmod linux-lts-dev
+
+              KVER="$({
+                for directory in /lib/modules/*; do
+                  [ -d "${directory}/build" ] && basename "${directory}"
+                done
+              } | sort -V | tail -n 1)"
+
+              case "${KVER}" in
+                6.6.*|6.6-*) ;;
+                *)
+                  echo "Expected kernel 6.6.x, found ${KVER}" >&2
+                  exit 1
+                  ;;
+              esac
+
+              echo "Building against /lib/modules/${KVER}/build"
+              make KVER="${KVER}" clean
+              make KVER="${KVER}" -j"$(nproc)"
+
+              test -s smifb.ko
+              file smifb.ko
+              modinfo smifb.ko
+              modinfo -F vermagic smifb.ko | grep -F "${KVER}"
+            '
+
+      - name: Upload module
+        uses: actions/upload-artifact@v7
+        with:
+          name: smifb-kernel-6.6
+          path: smifb.ko
+          if-no-files-found: error
           retention-days: 30
 
   code-quality:
+    name: Static analysis
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 10
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Install dependencies
+        uses: actions/checkout@v7
+
+      - name: Install cppcheck
         run: |
           sudo apt-get update
           sudo apt-get install -y cppcheck
-      
-      - name: Static code analysis
+
+      - name: Run cppcheck
         continue-on-error: true
-        run: |
-          sudo cppcheck --enable=all --suppress=missingIncludeSystem . 2>&1 | head -100
+        run: cppcheck --enable=all --suppress=missingIncludeSystem .
