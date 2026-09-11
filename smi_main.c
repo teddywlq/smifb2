@@ -127,9 +127,9 @@ int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip)
 	unsigned bytesPerPixel = fb->format->cpp[0];
 	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0)
-	struct iosys_map src_map, dst_map;
+	struct iosys_map src_map = { }, dst_map = { };
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-	struct dma_buf_map src_map, dst_map;
+	struct dma_buf_map src_map = { }, dst_map = { };
 #endif
 	
 #define SMI_FAIL_MAP(_msg) \
@@ -145,8 +145,8 @@ int smi_handle_damage(struct drm_framebuffer *fb, struct drm_clip_rect clip)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 	ret = dma_buf_vmap(obj->import_attach->dmabuf, &src_map);
 	if (ret) {
-		DRM_ERROR("Failed to vmap src buffer\n");
-		return 0;
+		DRM_ERROR("Failed to vmap src buffer (%d)\n", ret);
+		return ret;
 	}
 	src = src_map.vaddr;
 #else
