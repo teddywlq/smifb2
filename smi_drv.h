@@ -37,11 +37,11 @@
 
 #define DRIVER_NAME		"smifb"
 #define DRIVER_DESC		"SiliconMotion GPU DRM Driver"
-#define DRIVER_DATE		"20260625"
+#define DRIVER_DATE		"20260918"
 
 #define DRIVER_MAJOR		2
 #define DRIVER_MINOR		5
-#define DRIVER_PATCHLEVEL	0
+#define DRIVER_PATCHLEVEL	1
 
 #define SMIFB_CONN_LIMIT 3
 
@@ -57,7 +57,7 @@ enum smi_audio_mode {
 #define SUPPORT_CHIP " SM750, SM768"
 
 
-#define _version_	"2.5.0.0"
+#define _version_	"2.5.1.0"
 #define SM768_REG_EXTERNAL 0
 
 #undef  NO_WC
