@@ -363,6 +363,14 @@ static void smi_crtc_atomic_enable(struct drm_crtc *crtc,
 {
 	ENTER();
 	struct smi_device *sdev = crtc->dev->dev_private;
+
+	/*
+	 * Atomic helpers track whether a CRTC may generate vblank.  Keep that
+	 * state in sync with the hardware lifecycle when vblank support is in
+	 * use, otherwise a later atomic disable warns in the DRM core.
+	 */
+	if (use_vblank)
+		drm_crtc_vblank_on(crtc);
 	if(!sscg_en)
 		LEAVE();
 	if(!crtc->state || !crtc->state->mode_changed)
@@ -399,6 +407,8 @@ static void smi_crtc_atomic_disable(struct drm_crtc *crtc,
 #endif
 {
 	ENTER();
+	if (use_vblank)
+		drm_crtc_vblank_off(crtc);
 	LEAVE();
 }
 

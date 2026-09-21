@@ -412,13 +412,20 @@ static int smi_pm_poweroff(struct device *dev)
 static int smi_enable_vblank(struct drm_device *dev, unsigned int pipe)
 {
 	struct smi_device *sdev = dev->dev_private;
+	int ret;
+	if (pipe >= 2)
+		return -EINVAL;
 	
 	if (sdev->specId == SPC_SM750) {
-		hw750_en_dis_interrupt(1, pipe);
+		ret = hw750_en_dis_interrupt(1, pipe);
 	} else if (sdev->specId == SPC_SM768) {
-		hw768_en_dis_interrupt(1, pipe);
+		hw768_en_dis_interrupt(0, pipe);
+		hw768_clear_vsync_interrupt(pipe);
+		ret = hw768_en_dis_interrupt(1, pipe);
+	} else {
+		return -ENODEV;
 	}
-	return 0;
+	return ret;
 }
 
 static void smi_disable_vblank(struct drm_device *dev, unsigned int pipe)
@@ -436,10 +443,23 @@ static void smi_disable_vblank(struct drm_device *dev, unsigned int pipe)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 static void smi_irq_preinstall(struct drm_device *dev)
 {
-	// To Do....
-	/* Disable *all* interrupts */
+	struct smi_device *sdev = dev->dev_private;
 
-	/* Clear bits if they're already high */
+	/*
+	 * Keep non-display interrupt enables (notably I2S) intact.  VSync
+	 * status is W1C and can already be set before the shared PCI IRQ is
+	 * installed; clear it while both display channels are masked.
+	 */
+	if (sdev->specId == SPC_SM768) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+		hw768_en_dis_interrupt(0, CHANNEL0_CTRL);
+		hw768_en_dis_interrupt(0, CHANNEL1_CTRL);
+#else
+		hw768_en_dis_interrupt(0);
+#endif
+		hw768_clear_vsync_interrupt(CHANNEL0_CTRL);
+		hw768_clear_vsync_interrupt(CHANNEL1_CTRL);
+	}
 }
 
 static int smi_irq_postinstall(struct drm_device *dev)
@@ -470,26 +490,26 @@ irqreturn_t smi_drm_interrupt(DRM_IRQ_ARGS)
 	if (sdev->specId == SPC_SM750) {
 		if (hw750_check_vsync_interrupt(0)) {
 			/* Clear the panel VSync Interrupt */
+			hw750_clear_vsync_interrupt(0);
 			drm_handle_vblank(dev, 0);
 			handled = 1;
-			hw750_clear_vsync_interrupt(0);
 		}
 		if (hw750_check_vsync_interrupt(1)) {
+			hw750_clear_vsync_interrupt(1);
 			drm_handle_vblank(dev, 1);
 			handled = 1;
-			hw750_clear_vsync_interrupt(1);
 		}
 	} else if (sdev->specId == SPC_SM768) {
 		if (hw768_check_vsync_interrupt(0)) {
 			/* Clear the panel VSync Interrupt */
+			hw768_clear_vsync_interrupt(0);
 			drm_handle_vblank(dev, 0);
 			handled = 1;
-			hw768_clear_vsync_interrupt(0);
 		}
 		if (hw768_check_vsync_interrupt(1)) {
+			hw768_clear_vsync_interrupt(1);
 			drm_handle_vblank(dev, 1);
 			handled = 1;
-			hw768_clear_vsync_interrupt(1);
 		}
 	}
 

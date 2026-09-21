@@ -247,35 +247,45 @@ bool get_hdmi_channel()
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe)
 {
-	if(status == 0)
-	{
-		pokeRegisterDWord(INT_MASK, 	(pipe == CHANNEL0_CTRL) ? 
-		FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, DISABLE):
-		FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, DISABLE));
+	unsigned long mask;
+
+	if (pipe != CHANNEL0_CTRL && pipe != CHANNEL1_CTRL)
+		return -EINVAL;
+
+	/*
+	 * INT_MASK is shared with I2S and other blocks.  Do not overwrite it
+	 * with a value based on zero: that loses unrelated interrupt enables.
+	 */
+	mask = peekRegisterDWord(INT_MASK);
+	if (pipe == CHANNEL0_CTRL) {
+		if (status)
+			mask = FIELD_SET(mask, INT_MASK, CHANNEL0_VSYNC, ENABLE);
+		else
+			mask = FIELD_SET(mask, INT_MASK, CHANNEL0_VSYNC, DISABLE);
+	} else {
+		if (status)
+			mask = FIELD_SET(mask, INT_MASK, CHANNEL1_VSYNC, ENABLE);
+		else
+			mask = FIELD_SET(mask, INT_MASK, CHANNEL1_VSYNC, DISABLE);
 	}
-	else
-	{
-		pokeRegisterDWord(INT_MASK, 	(pipe == CHANNEL1_CTRL) ? 
-		FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, ENABLE):
-		FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, ENABLE));
-	}
+	pokeRegisterDWord(INT_MASK, mask);
 	return 0;
 }
 #else
 int hw768_en_dis_interrupt(int status)
-	{
-		if(status == 0)
-		{
-			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, DISABLE));
-			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, DISABLE)); 
-		}
-		else
-		{
-			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL1_VSYNC, ENABLE));
-			pokeRegisterDWord(INT_MASK, FIELD_SET(0, INT_MASK, CHANNEL0_VSYNC, ENABLE));  
-		}
-		return 0;
+{
+	unsigned long mask = peekRegisterDWord(INT_MASK);
+
+	if (status) {
+		mask = FIELD_SET(mask, INT_MASK, CHANNEL0_VSYNC, ENABLE);
+		mask = FIELD_SET(mask, INT_MASK, CHANNEL1_VSYNC, ENABLE);
+	} else {
+		mask = FIELD_SET(mask, INT_MASK, CHANNEL0_VSYNC, DISABLE);
+		mask = FIELD_SET(mask, INT_MASK, CHANNEL1_VSYNC, DISABLE);
 	}
+	pokeRegisterDWord(INT_MASK, mask);
+	return 0;
+}
 
 #endif
 
@@ -333,19 +343,13 @@ int hw768_check_vsync_interrupt(int path)
 
 void hw768_clear_vsync_interrupt(int path)
 {
-	
-	unsigned long value;
-	
-	value = peekRegisterDWord(RAW_INT);
-
 	if (path == CHANNEL0_CTRL)
-	{
-		pokeRegisterDWord(RAW_INT, FIELD_SET(value, RAW_INT, CHANNEL0_VSYNC, CLEAR));
-	}
-	else
-	{
-		pokeRegisterDWord(RAW_INT, FIELD_SET(value, RAW_INT, CHANNEL1_VSYNC, CLEAR));
-	}
+		/* RAW_INT is write-one-to-clear; acknowledge only this source. */
+		pokeRegisterDWord(RAW_INT,
+				  FIELD_SET(0, RAW_INT, CHANNEL0_VSYNC, CLEAR));
+	else if (path == CHANNEL1_CTRL)
+		pokeRegisterDWord(RAW_INT,
+				  FIELD_SET(0, RAW_INT, CHANNEL1_VSYNC, CLEAR));
 }
 
 long hw768_setMode(logicalMode_t *pLogicalMode, struct drm_display_mode mode)
