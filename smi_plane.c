@@ -45,7 +45,7 @@ static int smi_cursor_atomic_check(struct drm_plane *plane,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)  
 				struct drm_plane_state *state
 #else
-				struct drm_atomic_state *atom_state
+				smi_atomic_state *atom_state
 #endif
 )
 {
@@ -73,7 +73,7 @@ static void smi_cursor_atomic_update(struct drm_plane *plane,
 #if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
 				 struct drm_plane_state *old_state
 #else
-				struct drm_atomic_state *atom_state
+				smi_atomic_state *atom_state
 #endif
 )
 {
@@ -234,7 +234,7 @@ static void smi_cursor_atomic_disable(struct drm_plane *plane,
 #if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
 				struct drm_plane_state *old_state
 #else
-				struct drm_atomic_state *atom_state
+				smi_atomic_state *atom_state
 #endif
 )
 {
@@ -376,7 +376,7 @@ static void smi_primary_plane_atomic_update(struct drm_plane *plane,
 #if KERNEL_VERSION(5, 13, 0) >  LINUX_VERSION_CODE
 				 struct drm_plane_state *old_state
 #else
-				struct drm_atomic_state *atom_state
+				smi_atomic_state *atom_state
 #endif
 )
 {
@@ -483,7 +483,7 @@ static int smi_primary_plane_atomic_check(struct drm_plane *plane,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
 	struct drm_plane_state *state
 #else
-	struct drm_atomic_state *atom_state
+	smi_atomic_state *atom_state
 #endif
 )
 {
@@ -566,7 +566,7 @@ static int smi_video_atomic_check(struct drm_plane *plane,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
 					  struct drm_plane_state *state
 #else
-					  struct drm_atomic_state *atom_state
+					  smi_atomic_state *atom_state
 #endif
 )
 {
@@ -594,7 +594,7 @@ static void smi_video_atomic_update(struct drm_plane *plane,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
 					   struct drm_plane_state *old_state
 #else
-					   struct drm_atomic_state *atom_state
+					   smi_atomic_state *atom_state
 #endif
 )
 {
@@ -682,7 +682,7 @@ static void smi_video_atomic_disable(struct drm_plane *plane,
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0)
 					    struct drm_plane_state *old_state
 #else
-					    struct drm_atomic_state *atom_state
+					    smi_atomic_state *atom_state
 #endif
 )
 {

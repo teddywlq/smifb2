@@ -215,8 +215,7 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 		logicalMode.pitch = 0;
 		logicalMode.dispCtrl = dst_ctrl;
 
-        /* SSCG must be configured before VCLK programming. */
-            ddk768_setVclkSscg(dst_ctrl, 0, sscg_type);
+        ddk768_setVclkSscg(dst_ctrl, 0, sscg_type);
 
 		switch (ctrl_index) // 0:DVI, 1:VGA, 2:HDMI
 		{
@@ -318,8 +317,9 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 			}
 #ifdef USE_LT8618
 		hw768_lt8618TaskWork(logicalMode.x, logicalMode.y);
+
 #endif				
-		}		
+		}
 
 	
 	}
@@ -339,7 +339,7 @@ static void smi_crtc_destroy(struct drm_crtc *crtc)
 
 static void smi_crtc_atomic_flush(struct drm_crtc *crtc, 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-	struct drm_atomic_state *state)
+	smi_atomic_state *state)
 #else
 	struct drm_crtc_state *old_state)
 #endif
@@ -356,7 +356,7 @@ static void smi_crtc_atomic_flush(struct drm_crtc *crtc,
 
 static void smi_crtc_atomic_enable(struct drm_crtc *crtc, 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-		struct drm_atomic_state *state)
+		smi_atomic_state *state)
 #else
 		struct drm_crtc_state *old_state)
 #endif
@@ -371,6 +371,7 @@ static void smi_crtc_atomic_enable(struct drm_crtc *crtc,
 	 */
 	if (use_vblank)
 		drm_crtc_vblank_on(crtc);
+
 	if(!sscg_en)
 		LEAVE();
 	if(!crtc->state || !crtc->state->mode_changed)
@@ -401,7 +402,7 @@ static void smi_crtc_atomic_enable(struct drm_crtc *crtc,
 
 static void smi_crtc_atomic_disable(struct drm_crtc *crtc, 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-		struct drm_atomic_state *state)
+		smi_atomic_state *state)
 #else
 		struct drm_crtc_state *old_state)
 #endif
@@ -790,12 +791,13 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 		if(connector->connector_type == DRM_MODE_CONNECTOR_DVII)
 		{
 			if(lvds_channel){
-
-				drm_connector_update_edid_property(connector, NULL);
+				
+				  drm_connector_update_edid_property(connector, NULL);
 				  count = drm_add_modes_noedid(connector, 1920, 1080);
 				  mode = drm_cvt_mode(connector->dev, fixed_width, fixed_height, 60, false,false, false);
 				  mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
 				  drm_mode_probed_add(connector, mode);
+
 			}
 			else
 			{
@@ -874,27 +876,26 @@ static int smi_connector_get_modes(struct drm_connector *connector)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 15, 0)
 static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *connector,
-				 struct drm_display_mode *mode)
+					      struct drm_display_mode *mode)
 #else
 static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *connector,
-													 const struct drm_display_mode *mode)
+						      const struct drm_display_mode *mode)
 #endif
 {
 	struct smi_device *sdev = connector->dev->dev_private;
+	u32 vrefresh = drm_mode_vrefresh(mode);
 
-	u32 vrefresh = drm_mode_vrefresh(mode);	
-	
+
 	if ((vrefresh < 29) || (vrefresh > 61) ||
 	    (vrefresh > 31 && vrefresh < 59)) {
-		if(!edid_mode)
+		if (!edid_mode)
 			return MODE_NOCLOCK;
 	}
 
 	if ((mode->hdisplay > 3840) || (mode->vdisplay > 2160) ||
 	    (mode->clock > 297000))
-		 return MODE_NOMODE;
-	
-	
+		return MODE_NOMODE;
+
 	if(mode->hdisplay > 1920) {
 		if ((sdev->m_connector == USE_DVI_HDMI) || (sdev->m_connector == USE_VGA_HDMI)||(sdev->specId == SPC_SM750))
 			return MODE_NOMODE;
@@ -902,26 +903,26 @@ static enum drm_mode_status smi_connector_mode_valid(struct drm_connector *conne
 
 	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVII) &&
 	    (mode->clock >= 200000))
-			return MODE_NOCLOCK;
+		return MODE_NOCLOCK;
 
 #ifdef USE_LT8618
 	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVII) &&
 	    lt8618_SupportModeValid(mode->hdisplay, mode->vdisplay, vrefresh))
-			return MODE_NOMODE;
+		return MODE_NOMODE;
 #endif
 
 	if (lvds_channel && !lcd_scale &&
 	    (connector->connector_type == DRM_MODE_CONNECTOR_DVII)) {
 		if ((mode->hdisplay == fixed_width) &&
 		    (mode->vdisplay == fixed_height))
-					return MODE_OK;    
+			return MODE_OK;
 
-					return MODE_NOMODE;
-		}
+		return MODE_NOMODE;
+	}
 
 	return MODE_OK;
-
 }
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 struct drm_encoder *smi_connector_best_encoder(struct drm_connector *connector)
 {

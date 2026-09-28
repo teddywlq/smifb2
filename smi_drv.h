@@ -33,6 +33,11 @@
 
 #include "smi_priv.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 2, 0)
+typedef struct drm_atomic_commit smi_atomic_state;
+#else
+typedef struct drm_atomic_state smi_atomic_state;
+#endif
 #define DRIVER_AUTHOR "SiliconMotion"
 
 #define DRIVER_NAME		"smifb"
