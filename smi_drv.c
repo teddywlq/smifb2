@@ -417,6 +417,8 @@ static int smi_enable_vblank(struct drm_device *dev, unsigned int pipe)
 		return -EINVAL;
 	
 	if (sdev->specId == SPC_SM750) {
+		hw750_en_dis_interrupt(0, pipe);
+		hw750_clear_vsync_interrupt(pipe);
 		ret = hw750_en_dis_interrupt(1, pipe);
 	} else if (sdev->specId == SPC_SM768) {
 		hw768_en_dis_interrupt(0, pipe);
@@ -445,12 +447,18 @@ static void smi_irq_preinstall(struct drm_device *dev)
 {
 	struct smi_device *sdev = dev->dev_private;
 
-	/*
-	 * Keep non-display interrupt enables (notably I2S) intact.  VSync
-	 * status is W1C and can already be set before the shared PCI IRQ is
-	 * installed; clear it while both display channels are masked.
-	 */
-	if (sdev->specId == SPC_SM768) {
+	
+	if (sdev->specId == SPC_SM750) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
+		hw750_en_dis_interrupt(0, CHANNEL0_CTRL);
+		hw750_en_dis_interrupt(0, CHANNEL1_CTRL);
+#else
+		hw750_en_dis_interrupt(0);
+#endif
+
+		hw750_clear_vsync_interrupt(CHANNEL0_CTRL);
+		hw750_clear_vsync_interrupt(CHANNEL1_CTRL);
+	} else if (sdev->specId == SPC_SM768) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 		hw768_en_dis_interrupt(0, CHANNEL0_CTRL);
 		hw768_en_dis_interrupt(0, CHANNEL1_CTRL);
