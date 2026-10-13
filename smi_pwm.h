@@ -30,9 +30,9 @@
 
 /* GPIO MUX Register for PWM pin configuration */
 #define SMI_GPIO_MUX			0x010010
-#define SMI_GPIO_MUX_PWM0		BIT(21)
-#define SMI_GPIO_MUX_PWM1		BIT(22)
-#define SMI_GPIO_MUX_PWM2		BIT(23)
+#define SMI_GPIO_MUX_PWM0		BIT(17)
+#define SMI_GPIO_MUX_PWM1		BIT(18)
+#define SMI_GPIO_MUX_PWM2		BIT(19)
 
 /* Maximum values */
 #define SMI_PWM_MAX_CHANNELS		3

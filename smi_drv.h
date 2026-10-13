@@ -132,6 +132,7 @@ struct smi_device {
 	int m_connector;  //bit 0: DVI, bit 1: VGA, bit 2: HDMI.
 
 	struct drm_encoder *smi_enc_tab[MAX_ENCODER];
+	struct drm_connector *smi_conn_tab[MAX_ENCODER];
 
 	struct smi_mode_info mode_info;
 

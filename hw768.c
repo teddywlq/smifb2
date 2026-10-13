@@ -73,18 +73,31 @@ void hw768_ddr_init(void)
 	printk("SM768 DDR Re-train\n");
 
     ulTmp = peekRegisterDWord(CLOCK_ENABLE);
+
+    //Shut off all active components, espically ARM
     pokeRegisterDWord(CLOCK_ENABLE, 0);
+
 	pokeRegisterDWord(0x41d4, 0x3c000001);
 	pokeRegisterDWord(0x4214, 0x3c000001);
 	pokeRegisterDWord(0x4254, 0x3c000001);
 	pokeRegisterDWord(0x4294, 0x3c000001);
 	pokeRegisterDWord(0x4184, 0x1b);
 	pokeRegisterDWord(0x4024, 0x30400832);
+	
+	/* Re-train Memory */
+
 	pokeRegisterDWord(0x4004, 0x0);
 	pokeRegisterDWord(0x4004, 0x1FF);
+
+
 	mdelay(50);
+
+	 //Restore clocks
     pokeRegisterDWord(CLOCK_ENABLE, ulTmp);
+	
 }
+
+
 void hw768_enable_lvds(int channels)
 {
 
@@ -94,12 +107,7 @@ void hw768_enable_lvds(int channels)
 	}else{
 		set48bitLVDS(0);
 	}
-	
-	
-
-
-
-	
+		
 }	
 
 
@@ -212,9 +220,28 @@ void hw768_init_lt8618(void)
 {
 	smi_lt8618Init();
 }
-int hw768_lt8618TaskWork(unsigned long width, unsigned long height)
+int hw768_lt8618TaskWork(struct smi_connector *connector,
+			unsigned long width, unsigned long height)
 {
-	return smi_lt8618SX_Task(width, height);
+	unsigned long gpio_mux;
+	unsigned char i2c_ctrl;
+	int ret;
+
+	/* LT8618 and DVI EDID share controller 0 and GPIOs 30/31. */
+	i2c_lock_bus(&connector->adapter, I2C_LOCK_ROOT_ADAPTER);
+	gpio_mux = peekRegisterDWord(GPIO_MUX);
+	i2c_ctrl = peekRegisterByte(I2C_CTRL);
+
+	ret = smi_lt8618SX_Task(width, height);
+
+	/* Restore the DDC bus without restarting the last I2C transfer. */
+	pokeRegisterByte(I2C_CTRL, FIELD_SET(i2c_ctrl, I2C_CTRL, CTRL, STOP));
+	pokeRegisterDWord(GPIO_MUX,
+		FIELD_VALUE(peekRegisterDWord(GPIO_MUX), GPIO_MUX, I2C0,
+			    FIELD_VAL_GET(gpio_mux, GPIO_MUX, I2C0)));
+	i2c_unlock_bus(&connector->adapter, I2C_LOCK_ROOT_ADAPTER);
+
+	return ret;
 }
 int lt8618_SupportModeValid(unsigned short width, unsigned short height, unsigned int vrefresh)
 {
@@ -243,6 +270,7 @@ bool get_hdmi_channel()
 {
 	return peekRegisterDWord(DISPLAY_CTRL) & (1 << 18);
 }
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0)
 int hw768_en_dis_interrupt(int status, int pipe)
@@ -524,6 +552,4 @@ long hw768_AdaptI2CCleanBus(struct drm_connector *connector)
         return ddk768_AdaptSWI2CCleanBus(smi_connector);
     }
 }
-
-
 

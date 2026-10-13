@@ -316,7 +316,8 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 				EnableDoublePixel(0);
 			}
 #ifdef USE_LT8618
-		hw768_lt8618TaskWork(logicalMode.x, logicalMode.y);
+		hw768_lt8618TaskWork(to_smi_connector(sdev->smi_conn_tab[0]),
+				    logicalMode.x, logicalMode.y);
 
 #endif				
 		}
@@ -1029,9 +1030,6 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 					return connector_status_disconnected;
 			}
 			
-			if (hwi2c_en)
-                ret = ddk768_edidHeaderReadMonitorExHwI2C(0);
-            else
 				ret = drm_probe_ddc(&smi_connector->adapter);
 
 			if (ret)
@@ -1058,9 +1056,6 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 					return connector_status_disconnected;
 			}
 			
-			if (hwi2c_en)
-			    ret = ddk768_edidHeaderReadMonitorExHwI2C(1);
-			else
 				ret = drm_probe_ddc(&smi_connector->adapter);	
 
 			if (ret)
@@ -1128,6 +1123,11 @@ static enum drm_connector_status smi_connector_detect(struct drm_connector
 static void smi_connector_destroy(struct drm_connector *connector)
 {
 	struct smi_device *sdev = connector->dev->dev_private;
+	int i;
+	for (i = 0; i < MAX_ENCODER; i++) {
+		if (sdev->smi_conn_tab[i] == connector)
+			sdev->smi_conn_tab[i] = NULL;
+	}
 	if (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA && sdev->hdmi_edid)
 	{
 		kfree(sdev->hdmi_edid);
@@ -1181,6 +1181,7 @@ static struct drm_connector *smi_connector_init(struct drm_device *dev, int inde
 	struct drm_connector *connector;
 	struct smi_connector *smi_connector;
 	struct smi_device *sdev = dev->dev_private;
+	int ret;
 
 	smi_connector = kzalloc(sizeof(struct smi_connector), GFP_KERNEL);
 	if (!smi_connector)
@@ -1206,11 +1207,16 @@ static struct drm_connector *smi_connector_init(struct drm_device *dev, int inde
 
 	if (sdev->specId == SPC_SM750) 
 	{
-		hw750_AdaptI2CInit(smi_connector);
+		ret = hw750_AdaptI2CInit(smi_connector);
 	}
 	else
 	{
-		hw768_AdaptI2CInit(smi_connector);
+		ret = hw768_AdaptI2CInit(smi_connector);
+	}
+	if (ret) {
+		drm_connector_cleanup(connector);
+		kfree(smi_connector);
+		return NULL;
 	}
 
 	drm_connector_helper_add(connector, &smi_vga_connector_helper_funcs);
@@ -1292,6 +1298,7 @@ int smi_modeset_init(struct smi_device *cdev)
 			DRM_ERROR("smi_%s_init failed\n", index?"VGA":"DVI");
 			return -1;
 		}
+		cdev->smi_conn_tab[index] = connector;
 		drm_connector_attach_encoder(connector, encoder);
 	}
 
