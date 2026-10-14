@@ -316,8 +316,13 @@ static void smi_crtc_mode_set_nofb(struct drm_crtc *crtc)
 				EnableDoublePixel(0);
 			}
 #ifdef USE_LT8618
-		hw768_lt8618TaskWork(to_smi_connector(sdev->smi_conn_tab[0]),
+		{
+			int ret = hw768_lt8618TaskWork(
+				to_smi_connector(sdev->smi_conn_tab[0]),
 				    logicalMode.x, logicalMode.y);
+			if (ret)
+				DRM_ERROR("LT8618 mode configuration failed: %d\n", ret);
+		}
 
 #endif				
 		}

@@ -118,6 +118,9 @@ struct smi_768_register;
 struct smi_device {
 	struct drm_device *dev;
 	struct snd_card 		*card;	
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+	struct pwm_chip *pwm_chip;
+#endif
 	unsigned long flags;
 
 	resource_size_t rmmio_base;

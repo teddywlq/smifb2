@@ -206,6 +206,9 @@ static void smi_pwm_get_state(struct pwm_chip *chip, struct pwm_device *pwm,
 }
 
 static const struct pwm_ops smi_pwm_ops = {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+	.owner = THIS_MODULE,
+#endif
 	.apply = smi_pwm_apply,
 	.get_state = smi_pwm_get_state,
 };
@@ -260,6 +263,9 @@ int smi_pwm_init(struct drm_device *ddev)
 		dev_err(dev, "Failed to register PWM chip: %d\n", ret);
 		return ret;
 	}
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+	smi_device->pwm_chip = chip;
+#endif
 
 	dev_info(dev, "SMI PWM driver registered with %d channel(s), clock rate %lu Hz\n",
          num_pwm, smi->clk_rate);
@@ -270,12 +276,18 @@ int smi_pwm_init(struct drm_device *ddev)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
 void smi_pwm_remove(struct drm_device *ddev)
 {
-	struct pwm_chip *chip = NULL;
-	struct pci_dev *pdev = to_pci_dev(ddev->dev);
-	struct device *dev = &pdev->dev;
-	chip = dev_get_drvdata(dev);
+	struct smi_device *smi = ddev->dev_private;
+	int ret;
 
-	pwmchip_remove(chip);
+	if (!smi || !smi->pwm_chip)
+		return;
+
+	ret = pwmchip_remove(smi->pwm_chip);
+	if (ret) {
+		dev_err(ddev->dev, "Failed to remove PWM chip: %d\n", ret);
+		return;
+	}
+	smi->pwm_chip = NULL;
 }
 #endif
 

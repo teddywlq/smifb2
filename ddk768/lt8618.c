@@ -18,13 +18,11 @@
 
    1280x720P 24Hz		60
    1280x720P 25Hz		61
-   1280x720P 30Hz		62
    1280x720P 50Hz		19
    1280x720P 60Hz		4
 
    1920x1080P 24Hz	32
    1920x1080P 25Hz	33
-   1920x1080P 30Hz	34
 
    1920x1080i 50Hz		20
    1920x1080i 60Hz		5
@@ -32,9 +30,8 @@
    1920x1080P 50Hz	31
    1920x1080P 60Hz	16
 
-   3840x2160P 24Hz	207
-   3840x2160P 25Hz	206
-   3840x2160P 30Hz	205
+   3840x2160P 24Hz	93
+   3840x2160P 25Hz	94
 
    Other resolution	0(default)
 
@@ -63,7 +60,6 @@ _24_32bit
 const struct video_timing video_720x480_60Hz     = {16, 62,  60, 720,   858,  9,  6,  30, 480,   525};//ok
 const struct video_timing video_800x600_60Hz     = {16, 62,  60, 800,   1056,  9,  6,  30, 600,   628};//ok
 const struct video_timing video_1280x720_60Hz    = {110,40, 220,1280,  1650,  6,  5,  19, 720,   750};//ok
-const struct video_timing video_1280x720_30Hz   = {736, 40, 1244,1280,  3300, 5,  5,  20, 720,   750};//no src
 const struct video_timing video_1920x1080_60Hz   = {88,44, 148,1920,  2200,  4,  5, 36, 1080,1125};//ok
 const struct video_timing video_1280x1024_60Hz   = {48,112, 248,1280,  1688,  1,  3, 38, 1024, 1066};//ok
 
@@ -72,11 +68,10 @@ const struct video_timing video_1440x900_60Hz    = { 80,  152, 232, 1440,   1904
 const struct video_timing video_1366x768_60Hz    = { 70,  143, 213, 1366,   1792,   3,  3,  24,  768,    798};//ok
 const struct video_timing video_1280x960_60Hz    = { 96,  112, 312, 1280,   1800,   1,  3,  36,  960,   1000};//ok
 const struct video_timing video_1280x800_60Hz    = { 72,  128, 200, 1280,   1680,   3,  6,  22,  800,    831};//ok
-const struct video_timing video_3840x2160_30Hz   = {176,88, 296,3840,  4400,  8,  10, 72, 2160, 2250};
 const struct video_timing video_1024x768_60Hz   = {24,136, 160,1024, 1344,  3,  6, 29, 768, 806};
 
 LT8618_SUPPORTMODE lt8618_SupportMode[SUPPORTMODE] = {
-	{720,480,60},{800,600,60},{1280,720,60},{1280,720,30},
+	{720,480,60},{800,600,60},{1280,720,60},
 	{1920,1080,60},{1280,1024,60},{1680,1050,60},{1440,900,60},
 	{1366,768,60},{1280,960,60},{1280,800,60},{1024,768,60}
 };
@@ -313,7 +308,7 @@ int LT8618SX_PLL_Version_U2(void)
 	  u8 cali_done;
 	  u8 cali_val;
 	  u8 lock;
-	  u8 dclk;
+	  u32 dclk;
 	
 	  dclk=LT8618SX_CLK_Det();
 	
@@ -901,10 +896,11 @@ void LT8618SX_Print_Video_Inf(void)
 }
 
 
-u8  LT8618SX_Video_Check(unsigned long width, unsigned long height)
+u8 LT8618SX_Video_Check(unsigned long width, unsigned long height)
 {
    
   u8 temp;
+
 	
 	hfp = 0;
 	hs_width = 0;
@@ -1015,16 +1011,6 @@ u8  LT8618SX_Video_Check(unsigned long width, unsigned long height)
 			HDMI_VIC=0;
 			video_bt=video_800x600_60Hz;
 	  }
-	else if(((h_act==video_1280x720_30Hz.hact)&&
-		 (v_act==video_1280x720_30Hz.vact)&&
-		 (h_tal==video_1280x720_30Hz.htotal)
-	) || (width==video_1280x720_30Hz.hact && height==video_1280x720_30Hz.vact))
-		{
-			smi_lt8618Msg("Video_Check = video_1280x720_30Hz\n ");
-			Video_Format=video_1280x720_30Hz_vic62;
-			HDMI_VIC=62;
-			video_bt=video_1280x720_30Hz;
-	  }
 	else if(((h_act==video_1280x720_60Hz.hact)&&
 		 (v_act==video_1280x720_60Hz.vact)&&
 		 (h_tal==video_1280x720_60Hz.htotal)
@@ -1099,15 +1085,6 @@ u8  LT8618SX_Video_Check(unsigned long width, unsigned long height)
 			HDMI_VIC=0;
 			video_bt=video_1280x800_60Hz;
 	  }
-	else if(((h_act==video_3840x2160_30Hz.hact)&&
-		 (v_act==video_3840x2160_30Hz.vact)&&
-		 (h_tal==video_3840x2160_30Hz.htotal)) || (width==video_3840x2160_30Hz.hact && height==video_3840x2160_30Hz.vact))
-		{
-			smi_lt8618Msg("Video_Check = video_3840x2160_30Hz\n");
-			Video_Format=video_3840x2160_30Hz_vic205;
-			HDMI_VIC=95;
-			video_bt=video_3840x2160_30Hz;
-	  }
 	else if(((h_act==video_1024x768_60Hz.hact)&&
 		 (v_act==video_1024x768_60Hz.vact)&&
 		 (h_tal==video_1024x768_60Hz.htotal)) || (width==video_1024x768_60Hz.hact && height==video_1024x768_60Hz.vact))
@@ -1131,47 +1108,27 @@ void LT8618SX_HDMI_TX_Digital( void )
 	u8	AVI_PB0	   = 0x00;
 	u8	AVI_PB1	   = 0x00;
 	u8	AVI_PB2	   = 0x00;
-	u8 avi_vic = HDMI_VIC == 95 ? 0 : HDMI_VIC;
 
 	AVI_PB1 = ( HDMI_Y << 5 );
 
 	AVI_PB2 = 0x2A;  // 16:9
 //	AVI_PB2 = 0x19;// 4:3
 
-	AVI_PB0 = (AVI_PB1 + AVI_PB2 + avi_vic <= 0x6f) ?
-		(0x6f - AVI_PB1 - AVI_PB2 - avi_vic) :
-		(0x16f - AVI_PB1 - AVI_PB2 - avi_vic);
+	AVI_PB0 = (AVI_PB1 + AVI_PB2 + HDMI_VIC <= 0x6f) ?
+		(0x6f - AVI_PB1 - AVI_PB2 - HDMI_VIC) :
+		(0x16f - AVI_PB1 - AVI_PB2 - HDMI_VIC);
 
 	lt8618_WriteI2C_Byte( 0xff, 0x84 );
 	lt8618_WriteI2C_Byte( 0x43, AVI_PB0 );    //AVI_PB0
 	lt8618_WriteI2C_Byte( 0x44, AVI_PB1 );    //AVI_PB1
 	lt8618_WriteI2C_Byte( 0x45, AVI_PB2 );    //AVI_PB2
-	lt8618_WriteI2C_Byte( 0x47, avi_vic );   //AVI_PB4
+	lt8618_WriteI2C_Byte( 0x47, HDMI_VIC );   //AVI_PB4
 
 	lt8618_WriteI2C_Byte( 0x10, 0x32 );       //data iland
 	lt8618_WriteI2C_Byte( 0x12, 0x64 );       //act_h_blank
 
-	//VS_IF, 4k 30hz need send VS_IF packet. Please refer to hdmi1.4 spec 8.2.3
-	if( HDMI_VIC == 95 )
-	{
-//	   LT8618SXB_I2C_Write_Byte(0xff,0x84);
-		lt8618_WriteI2C_Byte( 0x3d, 0x2a );   //UD1 infoframe enable
-
-		lt8618_WriteI2C_Byte( 0x74, 0x81 );
-		lt8618_WriteI2C_Byte( 0x75, 0x01 );
-		lt8618_WriteI2C_Byte( 0x76, 0x05 );
-		lt8618_WriteI2C_Byte( 0x77, 0x49 );
-		lt8618_WriteI2C_Byte( 0x78, 0x03 );
-		lt8618_WriteI2C_Byte( 0x79, 0x0c );
-		lt8618_WriteI2C_Byte( 0x7a, 0x00 );
-		lt8618_WriteI2C_Byte( 0x7b, 0x20 );
-		lt8618_WriteI2C_Byte( 0x7c, 0x01 );
-	}
-	else
-	{
-//	   LT8618SXB_I2C_Write_Byte(0xff,0x84);
-		lt8618_WriteI2C_Byte( 0x3d, 0x0a ); //UD1 infoframe disable
-	}
+	/* Supported modes do not require an HDMI 1.4 4K VSIF. */
+	lt8618_WriteI2C_Byte(0x3d, 0x0a); /* Disable the vendor-specific packet. */
     	//AVI_audio
     lt8618_WriteI2C_Byte( 0xff, 0x84 );
     lt8618_WriteI2C_Byte( 0xb2, 0x84 );
@@ -1528,7 +1485,7 @@ int LT8618SX_Task(unsigned long width, unsigned long height)
 //static u8 timeout=0;
      int ret = 0; 
      smi_lt8618Msg("->LT8618SX_Task Start\n");
-	  if( LT8618SX_Input_Change() || ( ( vid_chk_flag )&&( !LT8618SX_Input_Change() ))) 
+	  if(vid_chk_flag || LT8618SX_Input_Change())
 		//if(vid_chk_flag)
 		{     
 			// timeout++;
@@ -1623,12 +1580,16 @@ void smi_lt8618Init(void)
 
 int smi_lt8618SX_Task(unsigned long width, unsigned long height)
 {
+	int ret;
+
 	smi_iicGpioInit(30, 31);
-	LT8618SX_Task(width, height);
+	/* Modesets must reconfigure the bridge even if input detection is stale. */
+	vid_chk_flag = 1;
+	ret = LT8618SX_Task(width, height);
 #ifdef I2CHW
     ddk768_hwI2CClose(0);
 #endif
-	return 0;
+	return ret;
 }
 void LT8618SX_Output_Mode(char AudiOn)
 {

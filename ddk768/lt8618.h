@@ -23,7 +23,7 @@ typedef unsigned int u32;
 #define Video_Output_Mode  Output_RGB888
 #define Tx_Out_Mode   HDMI_OUT
 
-#define SUPPORTMODE 12
+#define SUPPORTMODE 11
 
 struct video_timing{
     u16 hfp;
@@ -88,7 +88,6 @@ enum VideoFormat
 	
 	video_1280x720_24Hz_vic60,
     video_1280x720_25Hz_vic61,   
-	video_1280x720_30Hz_vic62,
 	video_1280x720_50Hz_vic19,
     video_1280x720_60Hz_vic4,   
 
@@ -104,14 +103,12 @@ enum VideoFormat
     video_1280x800_60Hz_vic,
     video_1024x768_60Hz_vic,
 	
-	video_1920x1080_30Hz_vic34,
 	video_1920x1080_50Hz_vic31,
     video_1920x1080_60Hz_vic16, 
     video_1920x1080I_60Hz_vic5,	
 	
 	video_3840x2160_24Hz_vic207,
 	video_3840x2160_25Hz_vic206,
-	video_3840x2160_30Hz_vic205
 };
 
 enum AUDIO_INPUTMODE_ENUM
