@@ -100,7 +100,7 @@ u16 IIS_N[] =
 };
 
 
-int  lt8618_WriteI2C_Byte( u8 RegAddr, u8 data )
+static int lt8618_WriteI2C_Byte( u8 RegAddr, u8 data )
 {
 	int ret;
 #ifdef I2CHW
@@ -112,7 +112,7 @@ int  lt8618_WriteI2C_Byte( u8 RegAddr, u8 data )
 	return ret;
 }
 
-u8 lt8618_ReadI2C_Byte( u8 RegAddr )
+static u8 lt8618_ReadI2C_Byte( u8 RegAddr )
 {
 	u8 data = 0;
 #ifdef I2CHW
@@ -123,7 +123,7 @@ u8 lt8618_ReadI2C_Byte( u8 RegAddr )
 	return data;
 }
 
-void LT8618SX_RST_PD_Init(void)
+static void LT8618SX_RST_PD_Init(void)
 {
 	lt8618_WriteI2C_Byte(0xff,0x80);
 	lt8618_WriteI2C_Byte(0x11,0x00); //reset MIPI Rx logic
@@ -131,7 +131,7 @@ void LT8618SX_RST_PD_Init(void)
 	lt8618_WriteI2C_Byte(0x13,0xf9); //reset TTL video process
 }
 
-void LT8618SX_TTL_Input_Analog(void)
+static void LT8618SX_TTL_Input_Analog(void)
 {
 	
 	//TTL mode
@@ -147,7 +147,7 @@ void LT8618SX_TTL_Input_Analog(void)
 
 }
 
-void LT8618SX_TTL_Input_Digital(void)
+static void LT8618SX_TTL_Input_Digital(void)
 {
 	//TTL mode
 	if(Video_Input_Mode == Input_RGB888)
@@ -289,7 +289,7 @@ void LT8618SX_TTL_Input_Digital(void)
 	}		
 }
 
-u32 LT8618SX_CLK_Det(void)
+static u32 LT8618SX_CLK_Det(void)
 {
   u32 dclk_;
   lt8618_WriteI2C_Byte(0xff,0x82);
@@ -301,7 +301,7 @@ u32 LT8618SX_CLK_Det(void)
   return dclk_;
 }
 
-int LT8618SX_PLL_Version_U2(void)
+static int LT8618SX_PLL_Version_U2(void)
 {
 	  u8 read_val;
 	  u8 j;
@@ -429,7 +429,7 @@ int LT8618SX_PLL_Version_U2(void)
 				return 0;
 }
 
-int  LT8618SX_PLL_Version_U3(void)
+static int LT8618SX_PLL_Version_U3(void)
 {
 	  u8 read_val;
 	  u8 j;
@@ -601,7 +601,7 @@ int  LT8618SX_PLL_Version_U3(void)
 }
 
 
-int LT8618SX_PLL(void)
+static int LT8618SX_PLL(void)
 {
 	u8 read_val=0;
 	lt8618_WriteI2C_Byte(0xff,0x80);
@@ -625,7 +625,7 @@ int LT8618SX_PLL(void)
 	}
 }
 
-void LT8618SX_Audio_Init(void)
+static void LT8618SX_Audio_Init(void)
 {
     if(Audio_Input_Mode==I2S_2CH)
     {
@@ -661,7 +661,7 @@ void LT8618SX_Audio_Init(void)
     } 
 }
 
-void LT8618SX_IRQ_Init(void)
+static void LT8618SX_IRQ_Init(void)
 {
 		lt8618_WriteI2C_Byte(0xff,0x82);
 		lt8618_WriteI2C_Byte(0x10,0x00); //Output low level active;
@@ -689,7 +689,7 @@ void LT8618SX_IRQ_Init(void)
 		lt8618_WriteI2C_Byte(0x07,0x3f); //clear3
 }
 
-void LT8618SX_HDCP_Init( void )         //luodexing
+__attribute__((unused)) static void LT8618SX_HDCP_Init( void )         //luodexing
 {
 	 u8 read_val=0;
 	
@@ -725,7 +725,7 @@ void LT8618SX_HDCP_Init( void )         //luodexing
 
 }
 
-void LT8618SX_HDMI_Out_Enable(bool en)
+static void LT8618SX_HDMI_Out_Enable(bool en)
 {
 	lt8618_WriteI2C_Byte(0xff,0x81);
 	if(en)
@@ -740,7 +740,7 @@ void LT8618SX_HDMI_Out_Enable(bool en)
 		}
 }
 
-void LT8618SX_HDMI_TX_Phy(void) 
+static void LT8618SX_HDMI_TX_Phy(void)
 {
 	lt8618_WriteI2C_Byte(0xff,0x81);
 	lt8618_WriteI2C_Byte(0x30,0xea);//0xea
@@ -759,7 +759,7 @@ void LT8618SX_HDMI_TX_Phy(void)
 	lt8618_WriteI2C_Byte(0x44,0x0a);	
 }
 
-void LT8618sx_Pattern_Set(void)  
+__attribute__((unused)) static void LT8618sx_Pattern_Set(void)
 {
 	  smi_lt8618Msg("LT8618sx Pattern Set\n");
 	  LT8618SX_RST_PD_Init();
@@ -809,7 +809,7 @@ void LT8618sx_Pattern_Set(void)
 	
 }
 
-void LT8618SX_CSC(void)
+static void LT8618SX_CSC(void)
 {
 	if(Video_Output_Mode == Output_RGB888)
 	{
@@ -845,7 +845,7 @@ void LT8618SX_CSC(void)
 	}
 }
 
-u8 LT8618SX_Input_Change(void)
+static u8 LT8618SX_Input_Change(void)
 {
 	static u32 last_dclk_=0;
 	u32 dclk_;
@@ -888,7 +888,7 @@ u8 LT8618SX_Input_Change(void)
 	}
 }
 
-void LT8618SX_Print_Video_Inf(void)
+static void LT8618SX_Print_Video_Inf(void)
 {
 	smi_lt8618Msg("##########################LT8618SX Input Infor#####################\n");
 	smi_lt8618Msg("hfp = %u,hs_width = %u,hbp = %u,h_act = %u,h_tal = %u,vfp = %u,vs_width = %u,vbp = %u,v_act = %u, v_tal = %u\n",hfp,hs_width,hbp,h_act,h_tal,vfp,vs_width,vbp,v_act,v_tal);
@@ -896,7 +896,7 @@ void LT8618SX_Print_Video_Inf(void)
 }
 
 
-u8 LT8618SX_Video_Check(unsigned long width, unsigned long height)
+static u8 LT8618SX_Video_Check(unsigned long width, unsigned long height)
 {
    
   u8 temp;
@@ -1102,7 +1102,7 @@ u8 LT8618SX_Video_Check(unsigned long width, unsigned long height)
 }
 
 
-void LT8618SX_HDMI_TX_Digital( void )
+static void LT8618SX_HDMI_TX_Digital( void )
 {
 	//AVI
 	u8	AVI_PB0	   = 0x00;
@@ -1139,7 +1139,7 @@ void LT8618SX_HDMI_TX_Digital( void )
     lt8618_WriteI2C_Byte( 0xb7, ( ( Sampling_rate + 1 ) << 2 ) + Sampling_Size );             //AVI_PB1//32KHz 24bit(32bit)
 }
 
-void LT8618SX_BT_Set(void)
+static void LT8618SX_BT_Set(void)
 {
 		if(Video_Input_Mode == Input_RGB888)
 	{
@@ -1237,7 +1237,7 @@ void LT8618SX_BT_Set(void)
 	}
 }
 
-u8 LT8618SX_Phase(void)  
+static u8 LT8618SX_Phase(void)
 {
   u8 temp=0;
 	u8 read_value=0;
@@ -1285,7 +1285,7 @@ u8 LT8618SX_Phase(void)
 /**********************************************************/
 //only use for embbedded_sync(bt1120,bt656...) or DDR
 /************************************************************/
- bool LT8618SX_Phase_Config(void)
+static bool LT8618SX_Phase_Config(void)
 {
 	u8		Temp       = 0x00;
 	u8    Temp_f       =0x00;
@@ -1304,7 +1304,6 @@ u8 LT8618SX_Phase(void)
 	u16		V_ACT	   = 0x0000;
 	u16		H_ACT	   = 0x0000;
 	u16		H_TOTAL	   = 0x0000;
-	u16		V_TOTAL	   = 0x0000;
 	
 	
 	  Temp_f=LT8618SX_Phase() ;//it's setted before video check
@@ -1480,7 +1479,7 @@ u8 LT8618SX_Phase(void)
 		
 }
 
-int LT8618SX_Task(unsigned long width, unsigned long height)
+static int LT8618SX_Task(unsigned long width, unsigned long height)
 {
 //static u8 timeout=0;
      int ret = 0; 
@@ -1528,7 +1527,7 @@ int LT8618SX_Task(unsigned long width, unsigned long height)
 	return ret;
 }
 
-void LT8618SX_Init(void)
+__attribute__((unused)) static void LT8618SX_Init(void)
 {	
 	LT8618SX_RST_PD_Init();
 	LT8618SX_TTL_Input_Analog();
@@ -1546,14 +1545,14 @@ void LT8618SX_Init(void)
 
 
 
-void LT8618SX_Chip_ID(void)
+static void LT8618SX_Chip_ID(void)
 {
     lt8618_WriteI2C_Byte(0xFF,0x80);
     lt8618_WriteI2C_Byte(0xee,0x01);
     smi_lt8618Msg("LT8618SX Chip ID = 0x%x 0x%x 0x%x\n", lt8618_ReadI2C_Byte(0x00), lt8618_ReadI2C_Byte(0x01), lt8618_ReadI2C_Byte(0x02));
 }
 
-void smi_iicGpioInit(unsigned char scl, unsigned char sda)
+static void smi_iicGpioInit(unsigned char scl, unsigned char sda)
 {
 #ifdef I2CHW
 	ddk768_hwI2CInit(0);
